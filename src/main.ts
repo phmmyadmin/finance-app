@@ -1,9 +1,7 @@
-import { google } from 'googleapis';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { loadGoogleAuth } from './shared/infrastructure/loadGoogleAuth.js';
-import { SheetsCashflowRepository } from './module/cashflow/infrastructure/SheetsCashflowRepository.js';
+import { buildAppContext } from './composition.js';
 import {
   balanceByBankToolDefinition,
   handleGetBalanceByBank,
@@ -26,16 +24,7 @@ import {
 import {
   handleIngestBankExport,
   ingestBankExportToolDefinition,
-  type BankReaders,
 } from './module/cashflow/mcp/ingestBankExportTool.js';
-import { readBbvaXlsx } from './module/cashflow/infrastructure/imports/readBbvaXlsx.js';
-import { readSabadellXls } from './module/cashflow/infrastructure/imports/readSabadellXls.js';
-import { readRevolutCsv } from './module/cashflow/infrastructure/imports/readRevolutCsv.js';
-import { resolveBankExportFile } from './module/cashflow/mcp/resolveBankExportFile.js';
-import { homedir } from 'node:os';
-import { readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
-import { SheetsInvestmentsRepository } from './module/investments/infrastructure/SheetsInvestmentsRepository.js';
 import {
   handleListInvestments,
   listInvestmentsToolDefinition,
@@ -45,7 +34,6 @@ import {
   handleGetPortfolioSummary,
   portfolioSummaryToolDefinition,
 } from './module/investments/mcp/portfolioSummaryTool.js';
-import { SheetsValuationsRepository } from './module/investments/infrastructure/SheetsValuationsRepository.js';
 import {
   addValuationToolDefinition,
   handleAddValuation,
@@ -56,7 +44,6 @@ import {
   listValuationsToolDefinition,
   type ListValuationsArgs,
 } from './module/investments/mcp/listValuationsTool.js';
-import { SheetsPatrimonyRepository } from './module/patrimony/infrastructure/SheetsPatrimonyRepository.js';
 import {
   getPatrimonyHistoryToolDefinition,
   handleGetPatrimonyHistory,
@@ -71,30 +58,7 @@ import {
 } from './module/freshness/mcp/getDataFreshnessTool.js';
 
 async function main(): Promise<void> {
-  const spreadsheetId = process.env.SPREADSHEET_ID;
-  if (!spreadsheetId) throw new Error('SPREADSHEET_ID is required');
-
-  const auth = await loadGoogleAuth();
-  const sheets = google.sheets({ version: 'v4', auth });
-  const cashflowRepo = new SheetsCashflowRepository(sheets, spreadsheetId);
-  const investmentsRepo = new SheetsInvestmentsRepository(sheets, spreadsheetId);
-  const valuationsRepo = new SheetsValuationsRepository(sheets, spreadsheetId);
-  const patrimonyRepo = new SheetsPatrimonyRepository(sheets, spreadsheetId);
-  const bankReaders: BankReaders = {
-    bbva: readBbvaXlsx,
-    sabadell: readSabadellXls,
-    revolut: readRevolutCsv,
-  };
-  const fsAdapter = {
-    homedir: homedir(),
-    listDirectory: (dir: string) =>
-      readdirSync(dir).map((name) => ({
-        name,
-        mtimeMs: statSync(join(dir, name)).mtimeMs,
-      })),
-  };
-  const resolveFile = (bank: string, hint: string | undefined) =>
-    resolveBankExportFile(bank, hint, fsAdapter);
+  const ctx = await buildAppContext();
 
   const server = new Server(
     { name: 'finance-app', version: '0.0.1' },
@@ -119,72 +83,79 @@ async function main(): Promise<void> {
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    if (request.params.name === queryTransactionsToolDefinition.name) {
-      const args = (request.params.arguments ?? {}) as QueryTransactionsArgs;
-      const text = await handleQueryTransactions(cashflowRepo, args);
+    const { name, arguments: rawArgs } = request.params;
+    const args = rawArgs ?? {};
+
+    if (name === queryTransactionsToolDefinition.name) {
+      const text = await handleQueryTransactions(ctx.cashflowRepo, args as QueryTransactionsArgs);
       return { content: [{ type: 'text', text }] };
     }
-    if (request.params.name === balanceByBankToolDefinition.name) {
-      const text = await handleGetBalanceByBank(cashflowRepo);
+    if (name === balanceByBankToolDefinition.name) {
+      const text = await handleGetBalanceByBank(ctx.cashflowRepo);
       return { content: [{ type: 'text', text }] };
     }
-    if (request.params.name === spendingByCategoryToolDefinition.name) {
-      const args = (request.params.arguments ?? {}) as SpendingByCategoryArgs;
-      const text = await handleGetSpendingByCategory(cashflowRepo, args);
+    if (name === spendingByCategoryToolDefinition.name) {
+      const text = await handleGetSpendingByCategory(
+        ctx.cashflowRepo,
+        args as SpendingByCategoryArgs,
+      );
       return { content: [{ type: 'text', text }] };
     }
-    if (request.params.name === recurringExpensesToolDefinition.name) {
-      const args = (request.params.arguments ?? {}) as RecurringExpensesArgs;
-      const text = await handleGetRecurringExpenses(cashflowRepo, args);
+    if (name === recurringExpensesToolDefinition.name) {
+      const text = await handleGetRecurringExpenses(
+        ctx.cashflowRepo,
+        args as RecurringExpensesArgs,
+      );
       return { content: [{ type: 'text', text }] };
     }
-    if (request.params.name === ingestBankExportToolDefinition.name) {
-      const args = (request.params.arguments ?? {}) as { bank?: string; file?: string };
-      const text = await handleIngestBankExport(cashflowRepo, bankReaders, resolveFile, args);
+    if (name === ingestBankExportToolDefinition.name) {
+      const text = await handleIngestBankExport(
+        ctx.cashflowRepo,
+        ctx.bankReaders,
+        ctx.resolveFile,
+        args as { bank?: string; file?: string },
+      );
       return { content: [{ type: 'text', text }] };
     }
-    if (request.params.name === listInvestmentsToolDefinition.name) {
-      const args = (request.params.arguments ?? {}) as ListInvestmentsArgs;
-      const text = await handleListInvestments(investmentsRepo, args);
+    if (name === listInvestmentsToolDefinition.name) {
+      const text = await handleListInvestments(ctx.investmentsRepo, args as ListInvestmentsArgs);
       return { content: [{ type: 'text', text }] };
     }
-    if (request.params.name === portfolioSummaryToolDefinition.name) {
-      const text = await handleGetPortfolioSummary(investmentsRepo);
+    if (name === portfolioSummaryToolDefinition.name) {
+      const text = await handleGetPortfolioSummary(ctx.investmentsRepo);
       return { content: [{ type: 'text', text }] };
     }
-    if (request.params.name === addValuationToolDefinition.name) {
-      const args = (request.params.arguments ?? {}) as AddValuationArgs;
-      const text = await handleAddValuation(valuationsRepo, args);
+    if (name === addValuationToolDefinition.name) {
+      const text = await handleAddValuation(ctx.valuationsRepo, args as AddValuationArgs);
       return { content: [{ type: 'text', text }] };
     }
-    if (request.params.name === listValuationsToolDefinition.name) {
-      const args = (request.params.arguments ?? {}) as ListValuationsArgs;
-      const text = await handleListValuations(valuationsRepo, args);
+    if (name === listValuationsToolDefinition.name) {
+      const text = await handleListValuations(ctx.valuationsRepo, args as ListValuationsArgs);
       return { content: [{ type: 'text', text }] };
     }
-    if (request.params.name === getPatrimonyHistoryToolDefinition.name) {
-      const text = await handleGetPatrimonyHistory(patrimonyRepo);
+    if (name === getPatrimonyHistoryToolDefinition.name) {
+      const text = await handleGetPatrimonyHistory(ctx.patrimonyRepo);
       return { content: [{ type: 'text', text }] };
     }
-    if (request.params.name === getNetWorthToolDefinition.name) {
+    if (name === getNetWorthToolDefinition.name) {
       const text = await handleGetNetWorth(
-        cashflowRepo,
-        investmentsRepo,
-        valuationsRepo,
-        patrimonyRepo,
+        ctx.cashflowRepo,
+        ctx.investmentsRepo,
+        ctx.valuationsRepo,
+        ctx.patrimonyRepo,
       );
       return { content: [{ type: 'text', text }] };
     }
-    if (request.params.name === getDataFreshnessToolDefinition.name) {
+    if (name === getDataFreshnessToolDefinition.name) {
       const text = await handleGetDataFreshness(
-        cashflowRepo,
-        investmentsRepo,
-        valuationsRepo,
-        patrimonyRepo,
+        ctx.cashflowRepo,
+        ctx.investmentsRepo,
+        ctx.valuationsRepo,
+        ctx.patrimonyRepo,
       );
       return { content: [{ type: 'text', text }] };
     }
-    throw new Error(`Unknown tool: ${request.params.name}`);
+    throw new Error(`Unknown tool: ${name}`);
   });
 
   const transport = new StdioServerTransport();
