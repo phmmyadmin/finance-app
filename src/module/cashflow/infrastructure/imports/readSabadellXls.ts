@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import * as XLSX from 'xlsx';
 import type { Transaction } from '../../domain/Transaction.js';
 import { parseSabadellRow } from './parseSabadellRow.js';
@@ -5,7 +6,8 @@ import { parseSabadellRow } from './parseSabadellRow.js';
 const SHEET_NAME = 'Hoja1';
 
 export function readSabadellXls(filePath: string): Transaction[] {
-  const wb = XLSX.readFile(filePath);
+  const buf = readFileSync(filePath);
+  const wb = XLSX.read(buf, { type: 'buffer' });
   const ws = wb.Sheets[SHEET_NAME];
   if (!ws) {
     throw new Error(`Sheet "${SHEET_NAME}" not found in ${filePath}`);
