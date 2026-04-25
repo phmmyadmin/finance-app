@@ -51,8 +51,15 @@ Add to your MCP client config (e.g. Claude Desktop's `claude_desktop_config.json
 
 ## Tools exposed
 
+**Cashflow:**
+
 - `query_transactions({ from?, to?, descriptionContains?, bank?, limit? })` — returns matching transactions as JSON, sorted by date desc. Defaults to the last 90 days when no range is given.
 - `get_balance_by_bank` — returns the current balance per bank as a `{bank: amount}` map.
+
+**Investments:**
+
+- `list_investments({ platform?, assetClass? })` — list investment positions, optionally filtered.
+- `get_portfolio_summary` — totals invested per platform and per asset class.
 
 ## Architecture
 

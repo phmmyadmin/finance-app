@@ -13,6 +13,16 @@ import {
   queryTransactionsToolDefinition,
   type QueryTransactionsArgs,
 } from './module/cashflow/mcp/queryTransactionsTool.js';
+import { SheetsInvestmentsRepository } from './module/investments/infrastructure/SheetsInvestmentsRepository.js';
+import {
+  handleListInvestments,
+  listInvestmentsToolDefinition,
+  type ListInvestmentsArgs,
+} from './module/investments/mcp/listInvestmentsTool.js';
+import {
+  handleGetPortfolioSummary,
+  portfolioSummaryToolDefinition,
+} from './module/investments/mcp/portfolioSummaryTool.js';
 
 type InstalledCredentials = {
   installed: { client_id: string; client_secret: string };
@@ -45,6 +55,7 @@ async function main(): Promise<void> {
   const auth = await loadAuthClient();
   const sheets = google.sheets({ version: 'v4', auth });
   const cashflowRepo = new SheetsCashflowRepository(sheets, spreadsheetId);
+  const investmentsRepo = new SheetsInvestmentsRepository(sheets, spreadsheetId);
 
   const server = new Server(
     { name: 'finance-app', version: '0.0.1' },
@@ -52,7 +63,12 @@ async function main(): Promise<void> {
   );
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: [queryTransactionsToolDefinition, balanceByBankToolDefinition],
+    tools: [
+      queryTransactionsToolDefinition,
+      balanceByBankToolDefinition,
+      listInvestmentsToolDefinition,
+      portfolioSummaryToolDefinition,
+    ],
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -63,6 +79,15 @@ async function main(): Promise<void> {
     }
     if (request.params.name === balanceByBankToolDefinition.name) {
       const text = await handleGetBalanceByBank(cashflowRepo);
+      return { content: [{ type: 'text', text }] };
+    }
+    if (request.params.name === listInvestmentsToolDefinition.name) {
+      const args = (request.params.arguments ?? {}) as ListInvestmentsArgs;
+      const text = await handleListInvestments(investmentsRepo, args);
+      return { content: [{ type: 'text', text }] };
+    }
+    if (request.params.name === portfolioSummaryToolDefinition.name) {
+      const text = await handleGetPortfolioSummary(investmentsRepo);
       return { content: [{ type: 'text', text }] };
     }
     throw new Error(`Unknown tool: ${request.params.name}`);
