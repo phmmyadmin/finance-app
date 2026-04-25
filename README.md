@@ -23,6 +23,7 @@ pnpm auth              # one-time Google OAuth flow (read + write on Sheets) →
 
 - `pnpm start` — run the MCP server on stdio
 - `pnpm auth` — bootstrap Google OAuth (one-time)
+- `pnpm ingest <bank> <file>` — import a bank export into the Cash sheet (`bank` ∈ `bbva|sabadell|revolut`)
 - `pnpm test` — run unit tests
 - `pnpm test:integration` — run integration tests against the real spreadsheet
 - `pnpm typecheck` — type-check without emitting

@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "prepare": "husky",
     "auth": "node --import tsx --env-file=.env scripts/auth.ts",
+    "ingest": "node --import tsx --env-file=.env scripts/ingest.ts",
     "start": "node --import tsx --env-file=.env src/main.ts"
   },
   "lint-staged": {
