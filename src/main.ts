@@ -35,6 +35,11 @@ import {
   handleGetPortfolioSummary,
   portfolioSummaryToolDefinition,
 } from './module/investments/mcp/portfolioSummaryTool.js';
+import { SheetsPatrimonyRepository } from './module/patrimony/infrastructure/SheetsPatrimonyRepository.js';
+import {
+  getPatrimonyHistoryToolDefinition,
+  handleGetPatrimonyHistory,
+} from './module/patrimony/mcp/getPatrimonyHistoryTool.js';
 
 async function main(): Promise<void> {
   const spreadsheetId = process.env.SPREADSHEET_ID;
@@ -44,6 +49,7 @@ async function main(): Promise<void> {
   const sheets = google.sheets({ version: 'v4', auth });
   const cashflowRepo = new SheetsCashflowRepository(sheets, spreadsheetId);
   const investmentsRepo = new SheetsInvestmentsRepository(sheets, spreadsheetId);
+  const patrimonyRepo = new SheetsPatrimonyRepository(sheets, spreadsheetId);
   const bankReaders: BankReaders = {
     bbva: readBbvaXlsx,
     sabadell: readSabadellXls,
@@ -72,6 +78,7 @@ async function main(): Promise<void> {
       ingestBankExportToolDefinition,
       listInvestmentsToolDefinition,
       portfolioSummaryToolDefinition,
+      getPatrimonyHistoryToolDefinition,
     ],
   }));
 
@@ -97,6 +104,10 @@ async function main(): Promise<void> {
     }
     if (request.params.name === portfolioSummaryToolDefinition.name) {
       const text = await handleGetPortfolioSummary(investmentsRepo);
+      return { content: [{ type: 'text', text }] };
+    }
+    if (request.params.name === getPatrimonyHistoryToolDefinition.name) {
+      const text = await handleGetPatrimonyHistory(patrimonyRepo);
       return { content: [{ type: 'text', text }] };
     }
     throw new Error(`Unknown tool: ${request.params.name}`);
