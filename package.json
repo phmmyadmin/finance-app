@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "auth": "node --env-file=.env scripts/auth.ts"
   },
   "lint-staged": {
     "*.{ts,js}": [
