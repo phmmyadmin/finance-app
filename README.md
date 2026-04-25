@@ -57,6 +57,7 @@ Add to your MCP client config (e.g. Claude Desktop's `claude_desktop_config.json
 - `query_transactions({ from?, to?, descriptionContains?, bank?, limit? })` — returns matching transactions as JSON (with inferred `category`), sorted by date desc. Defaults to the last 90 days.
 - `get_balance_by_bank` — returns the current balance per bank as a `{bank: amount}` map.
 - `get_spending_by_category({ from?, to? })` — aggregates transactions by inferred category for the period.
+- `get_recurring_expenses({ minOccurrences?, activeOnly?, activeWindowDays? })` — detects subscriptions / recurring charges and flags price changes.
 - `ingest_bank_export({ bank, filePath })` — read a bank export from disk, dedupe, and append to the Cash sheet (`bank` ∈ `bbva|sabadell|revolut`).
 
 **Investments:**

@@ -19,6 +19,11 @@ import {
   type SpendingByCategoryArgs,
 } from './module/cashflow/mcp/spendingByCategoryTool.js';
 import {
+  handleGetRecurringExpenses,
+  recurringExpensesToolDefinition,
+  type RecurringExpensesArgs,
+} from './module/cashflow/mcp/recurringExpensesTool.js';
+import {
   handleIngestBankExport,
   ingestBankExportToolDefinition,
   type BankReaders,
@@ -97,6 +102,7 @@ async function main(): Promise<void> {
       queryTransactionsToolDefinition,
       balanceByBankToolDefinition,
       spendingByCategoryToolDefinition,
+      recurringExpensesToolDefinition,
       ingestBankExportToolDefinition,
       listInvestmentsToolDefinition,
       portfolioSummaryToolDefinition,
@@ -120,6 +126,11 @@ async function main(): Promise<void> {
     if (request.params.name === spendingByCategoryToolDefinition.name) {
       const args = (request.params.arguments ?? {}) as SpendingByCategoryArgs;
       const text = await handleGetSpendingByCategory(cashflowRepo, args);
+      return { content: [{ type: 'text', text }] };
+    }
+    if (request.params.name === recurringExpensesToolDefinition.name) {
+      const args = (request.params.arguments ?? {}) as RecurringExpensesArgs;
+      const text = await handleGetRecurringExpenses(cashflowRepo, args);
       return { content: [{ type: 'text', text }] };
     }
     if (request.params.name === ingestBankExportToolDefinition.name) {
