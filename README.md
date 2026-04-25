@@ -16,7 +16,7 @@ MCP server that exposes personal finance data (Google Sheets) so any MCP-compati
 nvm use
 pnpm install
 cp .env.example .env   # then fill in SPREADSHEET_ID
-pnpm auth              # one-time Google OAuth flow → saves token in .credentials/
+pnpm auth              # one-time Google OAuth flow (read + write on Sheets) → saves token in .credentials/
 ```
 
 ## Scripts
