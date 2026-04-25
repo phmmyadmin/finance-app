@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "prepare": "husky",
-    "auth": "node --env-file=.env scripts/auth.ts"
+    "auth": "node --import tsx --env-file=.env scripts/auth.ts",
+    "start": "node --import tsx --env-file=.env src/main.ts"
   },
   "lint-staged": {
     "*.{ts,js}": [
@@ -36,6 +37,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.8.3",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.0",
     "vitest": "^4.1.5"
