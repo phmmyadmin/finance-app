@@ -35,6 +35,17 @@ import {
   handleGetPortfolioSummary,
   portfolioSummaryToolDefinition,
 } from './module/investments/mcp/portfolioSummaryTool.js';
+import { SheetsValuationsRepository } from './module/investments/infrastructure/SheetsValuationsRepository.js';
+import {
+  addValuationToolDefinition,
+  handleAddValuation,
+  type AddValuationArgs,
+} from './module/investments/mcp/addValuationTool.js';
+import {
+  handleListValuations,
+  listValuationsToolDefinition,
+  type ListValuationsArgs,
+} from './module/investments/mcp/listValuationsTool.js';
 import { SheetsPatrimonyRepository } from './module/patrimony/infrastructure/SheetsPatrimonyRepository.js';
 import {
   getPatrimonyHistoryToolDefinition,
@@ -53,6 +64,7 @@ async function main(): Promise<void> {
   const sheets = google.sheets({ version: 'v4', auth });
   const cashflowRepo = new SheetsCashflowRepository(sheets, spreadsheetId);
   const investmentsRepo = new SheetsInvestmentsRepository(sheets, spreadsheetId);
+  const valuationsRepo = new SheetsValuationsRepository(sheets, spreadsheetId);
   const patrimonyRepo = new SheetsPatrimonyRepository(sheets, spreadsheetId);
   const bankReaders: BankReaders = {
     bbva: readBbvaXlsx,
@@ -82,6 +94,8 @@ async function main(): Promise<void> {
       ingestBankExportToolDefinition,
       listInvestmentsToolDefinition,
       portfolioSummaryToolDefinition,
+      addValuationToolDefinition,
+      listValuationsToolDefinition,
       getPatrimonyHistoryToolDefinition,
       getNetWorthToolDefinition,
     ],
@@ -109,6 +123,16 @@ async function main(): Promise<void> {
     }
     if (request.params.name === portfolioSummaryToolDefinition.name) {
       const text = await handleGetPortfolioSummary(investmentsRepo);
+      return { content: [{ type: 'text', text }] };
+    }
+    if (request.params.name === addValuationToolDefinition.name) {
+      const args = (request.params.arguments ?? {}) as AddValuationArgs;
+      const text = await handleAddValuation(valuationsRepo, args);
+      return { content: [{ type: 'text', text }] };
+    }
+    if (request.params.name === listValuationsToolDefinition.name) {
+      const args = (request.params.arguments ?? {}) as ListValuationsArgs;
+      const text = await handleListValuations(valuationsRepo, args);
       return { content: [{ type: 'text', text }] };
     }
     if (request.params.name === getPatrimonyHistoryToolDefinition.name) {
