@@ -107,6 +107,101 @@ describe('categorize', () => {
     expect(categorize(tx('Abono de nómina', -100))).toBe('uncategorized');
   });
 
+  it.each([
+    ['PAGO BIZUM JOAN LARREGOLA GUAITA', 'bizum'],
+    ['BIZUM ENVIADO SIN CONCEPTO', 'bizum'],
+    ['BIZUM RECIBIDO BIRRA', 'bizum'],
+    ['ABONO BIZUM DE DANIEL', 'bizum'],
+  ] as const)('bizum: %s', (desc, expected) => {
+    expect(categorize(tx(desc))).toBe(expected);
+  });
+
+  it('does not classify PayPal as a subscription anymore', () => {
+    expect(categorize(tx('Adeudo PayPal Europe S.a.r.l. et Cie S.C.A'))).toBe('uncategorized');
+  });
+
+  it.each([
+    ['BICING BARCELONA ES', 'transport'],
+    ['BENZINERA ESCLATOIL EL VENDRELL', 'transport'],
+    ['GRAB MAKATI', 'transport'],
+    ['PEMSA LEISURE BARCELONA', 'transport'],
+  ] as const)('extended transport: %s', (desc, expected) => {
+    expect(categorize(tx(desc))).toBe(expected);
+  });
+
+  it.each([
+    ['COMPRA TARJ. 5402XXXXXXXX8019 DIA VENDRELL', 'groceries'],
+    ['MKVENDRELL II EL VENDRELL', 'groceries'],
+    ['ALIPROX BARCELONA ES', 'groceries'],
+    ['PROXIM SUPERMERCATS BARCELONA', 'groceries'],
+    ['MAKRO KO PHA NGAN', 'groceries'],
+    ["K'APROFITI SANT CUGAT ES", 'groceries'],
+  ] as const)('extended groceries: %s', (desc, expected) => {
+    expect(categorize(tx(desc))).toBe(expected);
+  });
+
+  it.each([
+    ['BAR UNIC BARCELONA ES', 'restaurants'],
+    ['CAFETERIA GRAN VIA BARCELONA', 'restaurants'],
+    ["L'OVELLA NEGRA", 'restaurants'],
+    ['SUBWAY SINGH SURJIT S L', 'restaurants'],
+    ["MCDONALD'S SPLAU CORNELLA", 'restaurants'],
+    ['RESTAURANTES DELEVAL SGDA', 'restaurants'],
+  ] as const)('extended restaurants: %s', (desc, expected) => {
+    expect(categorize(tx(desc))).toBe(expected);
+  });
+
+  it.each([
+    ['KINEPOLIS BARCELONA', 'entertainment'],
+    ['SALAMANDRA BCN SL', 'entertainment'],
+  ] as const)('extended entertainment: %s', (desc, expected) => {
+    expect(categorize(tx(desc))).toBe(expected);
+  });
+
+  it.each([['VESTIDOS ARAYA BADALONA ES', 'shopping']] as const)(
+    'extended shopping: %s',
+    (desc, expected) => {
+      expect(categorize(tx(desc))).toBe(expected);
+    },
+  );
+
+  it.each([
+    ['AGUA AIGUES DEL VENDRELL S A', 'utilities'],
+    ['COMISION DIVISA NO EURO', 'utilities'],
+    ['ADEUDO JOSEP IRLA BOSCH 73, CINTOI 2-6', 'utilities'],
+    ['ADEUDO P MUNICIPAL LA BORDETA BBVA', 'utilities'],
+  ] as const)('extended utilities: %s', (desc, expected) => {
+    expect(categorize(tx(desc))).toBe(expected);
+  });
+
+  it.each([
+    ['TRANSFERENCIA REALIZADA ANDBANK', 'investments'],
+    ['Traspaso movimiento cuenta metas', 'investments'],
+  ] as const)('extended investments: %s', (desc, expected) => {
+    expect(categorize(tx(desc))).toBe(expected);
+  });
+
+  it.each([
+    ['INGRESO EN EFECTIVO BBVA OFICINA Nº 9303', 'transfers_self'],
+    ['Transferencia recibida saldo', 'transfers_self'],
+  ] as const)('extended transfers_self: %s', (desc, expected) => {
+    expect(categorize(tx(desc))).toBe(expected);
+  });
+
+  it.each([
+    ['REMUN MES CTA ONLINE SABADELL', 'income'],
+    ['Abono por transferencia a su favor recibida en EUR', 'income'],
+  ] as const)('extended income (positive amount required): %s', (desc, expected) => {
+    expect(categorize(tx(desc, 100))).toBe(expected);
+  });
+
+  it.each([
+    ['COM RET EFEC A DEBITO CON TARJ EN CAJ AUT', 'cash_withdrawal'],
+    ['RET EFEC DEBITO T CAJ AUT NO EUR COM INC', 'cash_withdrawal'],
+  ] as const)('extended cash_withdrawal: %s', (desc, expected) => {
+    expect(categorize(tx(desc))).toBe(expected);
+  });
+
   it('falls back to uncategorized for anything not matched', () => {
     expect(categorize(tx('Random merchant xyz'))).toBe('uncategorized');
     expect(categorize(tx(''))).toBe('uncategorized');

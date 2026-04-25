@@ -9,5 +9,6 @@ export type Category =
   | 'cash_withdrawal'
   | 'investments'
   | 'transfers_self'
+  | 'bizum'
   | 'income'
   | 'uncategorized';

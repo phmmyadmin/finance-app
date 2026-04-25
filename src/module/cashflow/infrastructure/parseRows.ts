@@ -16,6 +16,7 @@ const KNOWN_CATEGORIES: ReadonlySet<Category> = new Set<Category>([
   'cash_withdrawal',
   'investments',
   'transfers_self',
+  'bizum',
   'income',
   'uncategorized',
 ]);
