@@ -1,3 +1,4 @@
+import { categorize } from '../../domain/categorize.js';
 import type { Transaction } from '../../domain/Transaction.js';
 
 const BANK = 'REVOLUT';
@@ -16,11 +17,13 @@ export function parseRevolutCsvRow(row: string[]): Transaction | null {
   if (!Number.isFinite(amount)) return null;
 
   const description = row[4]?.trim() ?? '';
+  const roundedAmount = Math.round(amount * 100) / 100;
 
   return {
     date,
     description,
-    amount: Math.round(amount * 100) / 100,
+    amount: roundedAmount,
     bank: BANK,
+    category: categorize({ description, amount: roundedAmount }),
   };
 }

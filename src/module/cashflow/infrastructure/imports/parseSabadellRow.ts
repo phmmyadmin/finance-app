@@ -1,3 +1,4 @@
+import { categorize } from '../../domain/categorize.js';
 import type { Transaction } from '../../domain/Transaction.js';
 
 const BANK = 'SABADELL';
@@ -19,11 +20,13 @@ export function parseSabadellRow(row: unknown[]): Transaction | null {
   if (typeof importe !== 'number') return null;
 
   const concepto = typeof row[1] === 'string' ? row[1].trim() : '';
+  const amount = Math.round(importe * 100) / 100;
 
   return {
     date,
     description: concepto,
-    amount: Math.round(importe * 100) / 100,
+    amount,
     bank: BANK,
+    category: categorize({ description: concepto, amount }),
   };
 }

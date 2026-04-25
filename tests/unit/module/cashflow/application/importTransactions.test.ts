@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { importTransactions } from '../../../../../src/module/cashflow/application/importTransactions.js';
 import type { CashflowRepository } from '../../../../../src/module/cashflow/domain/CashflowRepository.js';
+import { categorize } from '../../../../../src/module/cashflow/domain/categorize.js';
 import type { Transaction } from '../../../../../src/module/cashflow/domain/Transaction.js';
 
 const tx = (
@@ -13,6 +14,7 @@ const tx = (
   description,
   amount,
   bank,
+  category: categorize({ description, amount }),
 });
 
 const repoWith = (existing: Transaction[]) => {

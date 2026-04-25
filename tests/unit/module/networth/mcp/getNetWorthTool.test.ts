@@ -10,8 +10,8 @@ import type { PatrimonyRepository } from '../../../../../src/module/patrimony/do
 
 const cashRepo: CashflowRepository = {
   listAll: async () => [
-    { date: new Date(), description: '', amount: 100, bank: 'BBVA' },
-    { date: new Date(), description: '', amount: 50, bank: 'BBVA' },
+    { date: new Date(), description: '', amount: 100, bank: 'BBVA', category: 'uncategorized' },
+    { date: new Date(), description: '', amount: 50, bank: 'BBVA', category: 'uncategorized' },
   ],
   appendMany: async () => {},
 };

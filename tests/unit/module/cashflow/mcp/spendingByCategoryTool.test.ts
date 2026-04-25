@@ -6,11 +6,14 @@ import {
 import type { CashflowRepository } from '../../../../../src/module/cashflow/domain/CashflowRepository.js';
 import type { Transaction } from '../../../../../src/module/cashflow/domain/Transaction.js';
 
+import { categorize } from '../../../../../src/module/cashflow/domain/categorize.js';
+
 const tx = (date: string, description: string, amount: number): Transaction => ({
   date: new Date(`${date}T00:00:00.000Z`),
   description,
   amount,
   bank: 'BBVA',
+  category: categorize({ description, amount }),
 });
 
 const fakeRepo = (transactions: Transaction[]): CashflowRepository => ({

@@ -25,6 +25,7 @@ describe('parseRevolutCsvRow', () => {
       description: 'Ilusiona',
       amount: -1,
       bank: 'REVOLUT',
+      category: 'uncategorized',
     });
   });
 

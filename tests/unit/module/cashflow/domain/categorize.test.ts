@@ -7,6 +7,7 @@ const tx = (description: string, amount = -10, bank: string | null = 'BBVA'): Tr
   description,
   amount,
   bank,
+  category: 'uncategorized',
 });
 
 describe('categorize', () => {

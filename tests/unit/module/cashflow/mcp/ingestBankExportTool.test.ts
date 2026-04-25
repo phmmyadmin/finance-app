@@ -11,6 +11,7 @@ const tx = (amount: number): Transaction => ({
   description: 'irrelevant',
   amount,
   bank: 'BBVA',
+  category: 'uncategorized',
 });
 
 const stubResolve = (path: string) => () => path;

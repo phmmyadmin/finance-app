@@ -1,3 +1,4 @@
+import { categorize } from '../../domain/categorize.js';
 import type { Transaction } from '../../domain/Transaction.js';
 
 const BANK = 'BBVA';
@@ -24,11 +25,13 @@ export function parseBbvaRow(row: unknown[]): Transaction | null {
   const concepto = typeof row[2] === 'string' ? row[2].trim() : '';
   const observaciones = typeof row[8] === 'string' ? row[8].trim() : '';
   const description = `${concepto} ${observaciones}`.trim();
+  const amount = Math.round(importe * 100) / 100;
 
   return {
     date,
     description,
-    amount: Math.round(importe * 100) / 100,
+    amount,
     bank: BANK,
+    category: categorize({ description, amount }),
   };
 }

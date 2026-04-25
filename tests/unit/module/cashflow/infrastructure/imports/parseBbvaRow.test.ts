@@ -24,6 +24,7 @@ describe('parseBbvaRow', () => {
       description: 'Transferencia recibida Withdrawal from Investor account No 59005829',
       amount: 60.64,
       bank: 'BBVA',
+      category: 'investments',
     });
   });
 

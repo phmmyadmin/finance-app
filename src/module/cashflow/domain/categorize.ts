@@ -1,7 +1,11 @@
 import type { Category } from './Category.js';
-import type { Transaction } from './Transaction.js';
 
-type RuleMatch = RegExp | ((tx: Transaction) => boolean);
+export type CategorizableTransaction = {
+  description: string;
+  amount: number;
+};
+
+type RuleMatch = RegExp | ((tx: CategorizableTransaction) => boolean);
 type Rule = { category: Category; match: RuleMatch };
 
 // Order matters: first matching rule wins. Specific/high-priority rules first.
@@ -65,7 +69,7 @@ const RULES: Rule[] = [
   },
 ];
 
-export function categorize(tx: Transaction): Category {
+export function categorize(tx: CategorizableTransaction): Category {
   for (const rule of RULES) {
     const matches =
       typeof rule.match === 'function' ? rule.match(tx) : rule.match.test(tx.description);

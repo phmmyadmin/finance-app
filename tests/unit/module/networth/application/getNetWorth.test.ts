@@ -14,6 +14,7 @@ const tx = (amount: number): Transaction => ({
   description: 'irrelevant',
   amount,
   bank: 'BBVA',
+  category: 'uncategorized',
 });
 
 const position = (platform: string, amount: number): Position => ({

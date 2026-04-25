@@ -18,6 +18,7 @@ const tx = (amount: number, bank: string | null): Transaction => ({
   description: 'irrelevant',
   amount,
   bank,
+  category: 'uncategorized',
 });
 
 describe('balanceByBankToolDefinition', () => {

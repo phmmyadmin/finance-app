@@ -1,6 +1,5 @@
 import type { CashflowRepository } from '../domain/CashflowRepository.js';
 import type { Category } from '../domain/Category.js';
-import { categorize } from '../domain/categorize.js';
 
 const DEFAULT_RANGE_DAYS = 90;
 const MS_PER_DAY = 86_400_000;
@@ -61,8 +60,7 @@ export async function handleGetSpendingByCategory(
 
   const byCategory: Partial<Record<Category, number>> = {};
   for (const t of inRange) {
-    const c = categorize(t);
-    byCategory[c] = (byCategory[c] ?? 0) + t.amount;
+    byCategory[t.category] = (byCategory[t.category] ?? 0) + t.amount;
   }
   for (const k of Object.keys(byCategory)) {
     byCategory[k as Category] = round2(byCategory[k as Category]!);

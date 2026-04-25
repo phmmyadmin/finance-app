@@ -16,12 +16,14 @@ describe('parseRows', () => {
         description: '2016',
         amount: 102.17,
         bank: 'BBVA',
+        category: 'uncategorized',
       },
       {
         date: new Date(Date.UTC(2017, 0, 3)),
         description: 'Norma comics Pago con tarjeta',
         amount: -17,
         bank: 'BBVA',
+        category: 'shopping',
       },
     ]);
   });
@@ -35,6 +37,7 @@ describe('parseRows', () => {
         description: 'Ajuste de cuentas',
         amount: 6,
         bank: null,
+        category: 'uncategorized',
       },
     ]);
   });
@@ -48,8 +51,24 @@ describe('parseRows', () => {
         description: 'Ajuste de cuentas',
         amount: 6,
         bank: null,
+        category: 'uncategorized',
       },
     ]);
+  });
+
+  it('uses the persisted category from column G when present', () => {
+    const rows = [[45698, 'Some random description', -10, 0, 0, 'BBVA', 'restaurants']];
+    expect(parseRows(rows)[0]?.category).toBe('restaurants');
+  });
+
+  it('falls back to categorize when column G is empty or invalid', () => {
+    const rows = [
+      [45698, 'MERCADONA Sants', -30, 0, 0, 'BBVA', ''],
+      [45698, 'KFC EL VENDRELL', -10, 0, 0, 'BBVA', 'not-a-known-category'],
+    ];
+    const result = parseRows(rows);
+    expect(result[0]?.category).toBe('groceries');
+    expect(result[1]?.category).toBe('restaurants');
   });
 
   it('skips rows without a date', () => {

@@ -4,6 +4,7 @@ import {
   queryTransactionsToolDefinition,
 } from '../../../../../src/module/cashflow/mcp/queryTransactionsTool.js';
 import type { CashflowRepository } from '../../../../../src/module/cashflow/domain/CashflowRepository.js';
+import { categorize } from '../../../../../src/module/cashflow/domain/categorize.js';
 import type { Transaction } from '../../../../../src/module/cashflow/domain/Transaction.js';
 
 const tx = (
@@ -16,6 +17,7 @@ const tx = (
   description,
   amount,
   bank,
+  category: categorize({ description, amount }),
 });
 
 const fakeRepo = (transactions: Transaction[]): CashflowRepository => ({

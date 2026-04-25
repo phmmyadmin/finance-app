@@ -22,6 +22,7 @@ describe('parseSabadellRow', () => {
       description: 'COMPRA TARJ. 5402XXXXXXXX8019 THE YVORY-BARCELONA',
       amount: -19.3,
       bank: 'SABADELL',
+      category: 'restaurants',
     });
   });
 
