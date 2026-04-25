@@ -1,4 +1,5 @@
 import type { CashflowRepository } from '../domain/CashflowRepository.js';
+import { categorize } from '../domain/categorize.js';
 
 const DEFAULT_LIMIT = 500;
 const DEFAULT_RANGE_DAYS = 90;
@@ -79,6 +80,7 @@ export async function handleQueryTransactions(
       description: t.description,
       amount: t.amount,
       bank: t.bank,
+      category: categorize(t),
     }));
 
   return JSON.stringify(filtered);

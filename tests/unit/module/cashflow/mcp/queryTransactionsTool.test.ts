@@ -158,13 +158,19 @@ describe('handleQueryTransactions', () => {
     expect(descriptions(result)).toEqual(['Mercadona Sants']);
   });
 
-  it('serializes dates as ISO YYYY-MM-DD strings', async () => {
-    const repo = fakeRepo([tx('2026-04-10', 'x', 5, 'BBVA')]);
+  it('serializes dates as ISO YYYY-MM-DD strings and includes category', async () => {
+    const repo = fakeRepo([tx('2026-04-10', 'MERCADONA', -5, 'BBVA')]);
 
     const result = await handleQueryTransactions(repo, { from: '2026-04-01' });
 
     expect(JSON.parse(result)).toEqual([
-      { date: '2026-04-10', description: 'x', amount: 5, bank: 'BBVA' },
+      {
+        date: '2026-04-10',
+        description: 'MERCADONA',
+        amount: -5,
+        bank: 'BBVA',
+        category: 'groceries',
+      },
     ]);
   });
 });
