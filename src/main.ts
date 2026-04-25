@@ -13,6 +13,14 @@ import {
   queryTransactionsToolDefinition,
   type QueryTransactionsArgs,
 } from './module/cashflow/mcp/queryTransactionsTool.js';
+import {
+  handleIngestBankExport,
+  ingestBankExportToolDefinition,
+  type BankReaders,
+} from './module/cashflow/mcp/ingestBankExportTool.js';
+import { readBbvaXlsx } from './module/cashflow/infrastructure/imports/readBbvaXlsx.js';
+import { readSabadellXls } from './module/cashflow/infrastructure/imports/readSabadellXls.js';
+import { readRevolutCsv } from './module/cashflow/infrastructure/imports/readRevolutCsv.js';
 import { SheetsInvestmentsRepository } from './module/investments/infrastructure/SheetsInvestmentsRepository.js';
 import {
   handleListInvestments,
@@ -32,6 +40,11 @@ async function main(): Promise<void> {
   const sheets = google.sheets({ version: 'v4', auth });
   const cashflowRepo = new SheetsCashflowRepository(sheets, spreadsheetId);
   const investmentsRepo = new SheetsInvestmentsRepository(sheets, spreadsheetId);
+  const bankReaders: BankReaders = {
+    bbva: readBbvaXlsx,
+    sabadell: readSabadellXls,
+    revolut: readRevolutCsv,
+  };
 
   const server = new Server(
     { name: 'finance-app', version: '0.0.1' },
@@ -42,6 +55,7 @@ async function main(): Promise<void> {
     tools: [
       queryTransactionsToolDefinition,
       balanceByBankToolDefinition,
+      ingestBankExportToolDefinition,
       listInvestmentsToolDefinition,
       portfolioSummaryToolDefinition,
     ],
@@ -55,6 +69,11 @@ async function main(): Promise<void> {
     }
     if (request.params.name === balanceByBankToolDefinition.name) {
       const text = await handleGetBalanceByBank(cashflowRepo);
+      return { content: [{ type: 'text', text }] };
+    }
+    if (request.params.name === ingestBankExportToolDefinition.name) {
+      const args = (request.params.arguments ?? {}) as { bank?: string; filePath?: string };
+      const text = await handleIngestBankExport(cashflowRepo, bankReaders, args);
       return { content: [{ type: 'text', text }] };
     }
     if (request.params.name === listInvestmentsToolDefinition.name) {
