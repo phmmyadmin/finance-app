@@ -11,16 +11,18 @@ function parseSpanishDate(value: unknown): Date | null {
   return new Date(Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd)));
 }
 
+// xlsx.sheet_to_json drops leading empty columns, so indices start at the first
+// non-empty column. BBVA report layout: 0=F.Valor, 1=Fecha, 2=Concepto,
+// 3=Movimiento, 4=Importe, 5=Divisa, 6=Disponible, 7=Divisa, 8=Observaciones.
 export function parseBbvaRow(row: unknown[]): Transaction | null {
-  const fecha = row[2]; // col C
-  const date = parseSpanishDate(fecha);
+  const date = parseSpanishDate(row[1]);
   if (!date) return null;
 
-  const importe = row[5]; // col F
+  const importe = row[4];
   if (typeof importe !== 'number') return null;
 
-  const concepto = typeof row[3] === 'string' ? row[3].trim() : '';
-  const observaciones = typeof row[9] === 'string' ? row[9].trim() : '';
+  const concepto = typeof row[2] === 'string' ? row[2].trim() : '';
+  const observaciones = typeof row[8] === 'string' ? row[8].trim() : '';
   const description = `${concepto} ${observaciones}`.trim();
 
   return {

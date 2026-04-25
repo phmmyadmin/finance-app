@@ -1,14 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { parseBbvaRow } from '../../../../../../src/module/cashflow/infrastructure/imports/parseBbvaRow.js';
 
-// BBVA "Informe BBVA" row layout:
-// 0=A (empty) | 1=B F.Valor | 2=C Fecha | 3=D Concepto | 4=E Movimiento
-// | 5=F Importe | 6=G Divisa | 7=H Disponible | 8=I Divisa | 9=J Observaciones
+// xlsx.sheet_to_json drops leading empty columns. Effective row layout:
+// 0=F.Valor | 1=Fecha | 2=Concepto | 3=Movimiento | 4=Importe
+// | 5=Divisa | 6=Disponible | 7=Divisa | 8=Observaciones
 
 describe('parseBbvaRow', () => {
   it('parses a standard BBVA data row', () => {
     const row = [
-      null,
       '24/04/2026',
       '24/04/2026',
       'Transferencia recibida',
@@ -29,22 +28,22 @@ describe('parseBbvaRow', () => {
   });
 
   it('returns null for header rows (no parseable date)', () => {
-    expect(parseBbvaRow([null, 'F.Valor', 'Fecha', 'Concepto'])).toBeNull();
+    expect(parseBbvaRow(['F.Valor', 'Fecha', 'Concepto'])).toBeNull();
     expect(parseBbvaRow([])).toBeNull();
   });
 
   it('returns null when amount is missing', () => {
-    const row = [null, '24/04/2026', '24/04/2026', 'Concepto', 'Mov', null, 'EUR'];
+    const row = ['24/04/2026', '24/04/2026', 'Concepto', 'Mov', null, 'EUR'];
     expect(parseBbvaRow(row)).toBeNull();
   });
 
   it('uses concepto alone when observations are missing', () => {
-    const row = [null, '01/03/2026', '01/03/2026', 'Concepto solo', 'Mov', -10, 'EUR'];
+    const row = ['01/03/2026', '01/03/2026', 'Concepto solo', 'Mov', -10, 'EUR'];
     expect(parseBbvaRow(row)?.description).toBe('Concepto solo');
   });
 
   it('rounds amount to 2 decimals', () => {
-    const row = [null, '01/03/2026', '01/03/2026', 'C', 'M', 0.1 + 0.2, 'EUR'];
+    const row = ['01/03/2026', '01/03/2026', 'C', 'M', 0.1 + 0.2, 'EUR'];
     expect(parseBbvaRow(row)?.amount).toBe(0.3);
   });
 });
