@@ -51,7 +51,7 @@ Add to your MCP client config (e.g. Claude Desktop's `claude_desktop_config.json
 
 ## Tools exposed
 
-- `list_transactions` — returns every cash flow transaction from the `Cash` sheet as JSON.
+- `query_transactions({ from?, to?, descriptionContains?, bank?, limit? })` — returns matching transactions as JSON, sorted by date desc. Defaults to the last 90 days when no range is given.
 - `get_balance_by_bank` — returns the current balance per bank as a `{bank: amount}` map.
 
 ## Architecture

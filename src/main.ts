@@ -5,13 +5,14 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { SheetsCashflowRepository } from './module/cashflow/infrastructure/SheetsCashflowRepository.js';
 import {
-  handleListTransactions,
-  listTransactionsToolDefinition,
-} from './module/cashflow/mcp/listTransactionsTool.js';
-import {
   balanceByBankToolDefinition,
   handleGetBalanceByBank,
 } from './module/cashflow/mcp/balanceByBankTool.js';
+import {
+  handleQueryTransactions,
+  queryTransactionsToolDefinition,
+  type QueryTransactionsArgs,
+} from './module/cashflow/mcp/queryTransactionsTool.js';
 
 type InstalledCredentials = {
   installed: { client_id: string; client_secret: string };
@@ -51,12 +52,13 @@ async function main(): Promise<void> {
   );
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: [listTransactionsToolDefinition, balanceByBankToolDefinition],
+    tools: [queryTransactionsToolDefinition, balanceByBankToolDefinition],
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    if (request.params.name === listTransactionsToolDefinition.name) {
-      const text = await handleListTransactions(cashflowRepo);
+    if (request.params.name === queryTransactionsToolDefinition.name) {
+      const args = (request.params.arguments ?? {}) as QueryTransactionsArgs;
+      const text = await handleQueryTransactions(cashflowRepo, args);
       return { content: [{ type: 'text', text }] };
     }
     if (request.params.name === balanceByBankToolDefinition.name) {
