@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   handleListTransactions,
   listTransactionsToolDefinition,
-} from '../../../../../src/module/cashflow/infrastructure/listTransactionsTool.js';
+} from '../../../../../src/module/cashflow/mcp/listTransactionsTool.js';
 import type { CashflowRepository } from '../../../../../src/module/cashflow/domain/CashflowRepository.js';
 
 const fakeRepo = (

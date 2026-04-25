@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   balanceByBankToolDefinition,
   handleGetBalanceByBank,
-} from '../../../../../src/module/cashflow/infrastructure/balanceByBankTool.js';
+} from '../../../../../src/module/cashflow/mcp/balanceByBankTool.js';
 import type { CashflowRepository } from '../../../../../src/module/cashflow/domain/CashflowRepository.js';
 import type { Transaction } from '../../../../../src/module/cashflow/domain/Transaction.js';
 

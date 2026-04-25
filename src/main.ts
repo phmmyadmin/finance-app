@@ -7,11 +7,11 @@ import { SheetsCashflowRepository } from './module/cashflow/infrastructure/Sheet
 import {
   handleListTransactions,
   listTransactionsToolDefinition,
-} from './module/cashflow/infrastructure/listTransactionsTool.js';
+} from './module/cashflow/mcp/listTransactionsTool.js';
 import {
   balanceByBankToolDefinition,
   handleGetBalanceByBank,
-} from './module/cashflow/infrastructure/balanceByBankTool.js';
+} from './module/cashflow/mcp/balanceByBankTool.js';
 
 type InstalledCredentials = {
   installed: { client_id: string; client_secret: string };
