@@ -52,6 +52,7 @@ Add to your MCP client config (e.g. Claude Desktop's `claude_desktop_config.json
 ## Tools exposed
 
 - `list_transactions` — returns every cash flow transaction from the `Cash` sheet as JSON.
+- `get_balance_by_bank` — returns the current balance per bank as a `{bank: amount}` map.
 
 ## Architecture
 
