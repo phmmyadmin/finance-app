@@ -3,7 +3,7 @@ import type { CashflowRepository } from '../domain/CashflowRepository.js';
 import type { Transaction } from '../domain/Transaction.js';
 import { parseRows } from './parseRows.js';
 
-const READ_RANGE = 'Cash!A2:F';
+const READ_RANGE = 'Cash!A2:G';
 const COLUMN_A_RANGE = 'Cash!A2:A';
 
 export class SheetsCashflowRepository implements CashflowRepository {
@@ -42,13 +42,14 @@ export class SheetsCashflowRepository implements CashflowRepository {
         `=TODAY()-A${r}`,
         `=SUM(C$2:C${r})`,
         t.bank ?? '',
+        t.category,
       ];
     });
 
     const endRow = startRow + transactions.length - 1;
     await this.sheets.spreadsheets.values.update({
       spreadsheetId: this.spreadsheetId,
-      range: `Cash!A${startRow}:F${endRow}`,
+      range: `Cash!A${startRow}:G${endRow}`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values },
     });
