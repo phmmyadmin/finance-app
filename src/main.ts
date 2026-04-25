@@ -1,6 +1,13 @@
 import { google } from 'googleapis';
 import fs from 'node:fs/promises';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { SheetsCashflowRepository } from './module/cashflow/infrastructure/SheetsCashflowRepository.js';
+import {
+  handleListTransactions,
+  listTransactionsToolDefinition,
+} from './module/cashflow/infrastructure/listTransactionsTool.js';
 
 type InstalledCredentials = {
   installed: { client_id: string; client_secret: string };
@@ -32,21 +39,29 @@ async function main(): Promise<void> {
 
   const auth = await loadAuthClient();
   const sheets = google.sheets({ version: 'v4', auth });
-  const repo = new SheetsCashflowRepository(sheets, spreadsheetId);
+  const cashflowRepo = new SheetsCashflowRepository(sheets, spreadsheetId);
 
-  const transactions = await repo.listAll();
-  console.log(`Loaded ${transactions.length} transactions`);
-  for (const tx of transactions.slice(0, 5)) {
-    console.log(
-      `${tx.date.toISOString().slice(0, 10)} | ${tx.bank ?? '(no bank)'} | ${tx.amount} | ${tx.description}`,
-    );
-  }
-  console.log('...');
-  for (const tx of transactions.slice(-5)) {
-    console.log(
-      `${tx.date.toISOString().slice(0, 10)} | ${tx.bank ?? '(no bank)'} | ${tx.amount} | ${tx.description}`,
-    );
-  }
+  const server = new Server(
+    { name: 'finance-app', version: '0.0.1' },
+    { capabilities: { tools: {} } },
+  );
+
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: [listTransactionsToolDefinition],
+  }));
+
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    if (request.params.name === listTransactionsToolDefinition.name) {
+      const text = await handleListTransactions(cashflowRepo);
+      return { content: [{ type: 'text', text }] };
+    }
+    throw new Error(`Unknown tool: ${request.params.name}`);
+  });
+
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  // stderr is fine; stdout is reserved for the MCP transport.
+  console.error('finance-app MCP server ready on stdio');
 }
 
 await main();
