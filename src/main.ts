@@ -14,6 +14,11 @@ import {
   type QueryTransactionsArgs,
 } from './module/cashflow/mcp/queryTransactionsTool.js';
 import {
+  handleGetSpendingByCategory,
+  spendingByCategoryToolDefinition,
+  type SpendingByCategoryArgs,
+} from './module/cashflow/mcp/spendingByCategoryTool.js';
+import {
   handleIngestBankExport,
   ingestBankExportToolDefinition,
   type BankReaders,
@@ -91,6 +96,7 @@ async function main(): Promise<void> {
     tools: [
       queryTransactionsToolDefinition,
       balanceByBankToolDefinition,
+      spendingByCategoryToolDefinition,
       ingestBankExportToolDefinition,
       listInvestmentsToolDefinition,
       portfolioSummaryToolDefinition,
@@ -109,6 +115,11 @@ async function main(): Promise<void> {
     }
     if (request.params.name === balanceByBankToolDefinition.name) {
       const text = await handleGetBalanceByBank(cashflowRepo);
+      return { content: [{ type: 'text', text }] };
+    }
+    if (request.params.name === spendingByCategoryToolDefinition.name) {
+      const args = (request.params.arguments ?? {}) as SpendingByCategoryArgs;
+      const text = await handleGetSpendingByCategory(cashflowRepo, args);
       return { content: [{ type: 'text', text }] };
     }
     if (request.params.name === ingestBankExportToolDefinition.name) {
