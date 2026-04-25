@@ -5,6 +5,7 @@ import {
 } from '../../../../../src/module/networth/mcp/getNetWorthTool.js';
 import type { CashflowRepository } from '../../../../../src/module/cashflow/domain/CashflowRepository.js';
 import type { InvestmentsRepository } from '../../../../../src/module/investments/domain/InvestmentsRepository.js';
+import type { ValuationsRepository } from '../../../../../src/module/investments/domain/ValuationsRepository.js';
 import type { PatrimonyRepository } from '../../../../../src/module/patrimony/domain/PatrimonyRepository.js';
 
 const cashRepo: CashflowRepository = {
@@ -25,6 +26,10 @@ const investmentsRepo: InvestmentsRepository = {
     },
   ],
 };
+const valuationsRepo: ValuationsRepository = {
+  listAll: async () => [{ platform: 'X', at: new Date(Date.UTC(2026, 3, 1)), value: 250 }],
+  appendOne: async () => {},
+};
 const patrimonyRepo: PatrimonyRepository = {
   listAll: async () => [{ year: 2025, patrimony: 300, improvementPct: 0, improvementEur: 0 }],
 };
@@ -36,15 +41,17 @@ describe('getNetWorthToolDefinition', () => {
 });
 
 describe('handleGetNetWorth', () => {
-  it('returns combined net worth as JSON', async () => {
-    const result = JSON.parse(await handleGetNetWorth(cashRepo, investmentsRepo, patrimonyRepo));
+  it('returns combined net worth using valuations as JSON', async () => {
+    const result = JSON.parse(
+      await handleGetNetWorth(cashRepo, investmentsRepo, valuationsRepo, patrimonyRepo),
+    );
 
     expect(result).toEqual({
       cash: 150,
-      investmentsPrincipal: 200,
-      computedTotal: 350,
+      investments: 250,
+      computedTotal: 400,
       lastPatrimony: { year: 2025, value: 300 },
-      deltaSinceLastPatrimony: 50,
+      deltaSinceLastPatrimony: 100,
     });
   });
 });

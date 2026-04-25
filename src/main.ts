@@ -140,7 +140,12 @@ async function main(): Promise<void> {
       return { content: [{ type: 'text', text }] };
     }
     if (request.params.name === getNetWorthToolDefinition.name) {
-      const text = await handleGetNetWorth(cashflowRepo, investmentsRepo, patrimonyRepo);
+      const text = await handleGetNetWorth(
+        cashflowRepo,
+        investmentsRepo,
+        valuationsRepo,
+        patrimonyRepo,
+      );
       return { content: [{ type: 'text', text }] };
     }
     throw new Error(`Unknown tool: ${request.params.name}`);

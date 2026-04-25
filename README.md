@@ -62,6 +62,8 @@ Add to your MCP client config (e.g. Claude Desktop's `claude_desktop_config.json
 
 - `list_investments({ platform?, assetClass? })` — list investment positions, optionally filtered.
 - `get_portfolio_summary` — totals invested per platform and per asset class.
+- `add_valuation({ platform, value, date? })` — record a snapshot of the current value of a platform.
+- `list_valuations({ platform?, from?, to? })` — read valuation history.
 
 **Patrimony:**
 
@@ -69,7 +71,7 @@ Add to your MCP client config (e.g. Claude Desktop's `claude_desktop_config.json
 
 **Combined:**
 
-- `get_net_worth` — cash + invested principal + last patrimony snapshot, with delta vs the snapshot.
+- `get_net_worth` — cash + investments (latest valuation per platform, fallback to principal) + last patrimony snapshot, with delta vs the snapshot.
 
 ## Architecture
 
