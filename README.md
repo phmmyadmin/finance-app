@@ -74,6 +74,7 @@ Add to your MCP client config (e.g. Claude Desktop's `claude_desktop_config.json
 **Combined:**
 
 - `get_net_worth` — cash + investments (latest valuation per platform, fallback to principal) + last patrimony snapshot, with delta vs the snapshot.
+- `get_data_freshness` — staleness of every data source (cash per bank, valuations per platform, patrimony) sorted oldest first.
 
 ## Architecture
 

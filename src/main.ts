@@ -65,6 +65,10 @@ import {
   getNetWorthToolDefinition,
   handleGetNetWorth,
 } from './module/networth/mcp/getNetWorthTool.js';
+import {
+  getDataFreshnessToolDefinition,
+  handleGetDataFreshness,
+} from './module/freshness/mcp/getDataFreshnessTool.js';
 
 async function main(): Promise<void> {
   const spreadsheetId = process.env.SPREADSHEET_ID;
@@ -110,6 +114,7 @@ async function main(): Promise<void> {
       listValuationsToolDefinition,
       getPatrimonyHistoryToolDefinition,
       getNetWorthToolDefinition,
+      getDataFreshnessToolDefinition,
     ],
   }));
 
@@ -163,6 +168,15 @@ async function main(): Promise<void> {
     }
     if (request.params.name === getNetWorthToolDefinition.name) {
       const text = await handleGetNetWorth(
+        cashflowRepo,
+        investmentsRepo,
+        valuationsRepo,
+        patrimonyRepo,
+      );
+      return { content: [{ type: 'text', text }] };
+    }
+    if (request.params.name === getDataFreshnessToolDefinition.name) {
+      const text = await handleGetDataFreshness(
         cashflowRepo,
         investmentsRepo,
         valuationsRepo,
