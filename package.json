@@ -16,6 +16,7 @@
     "prepare": "husky",
     "auth": "node --import tsx --env-file=.env scripts/auth.ts",
     "ingest": "node --import tsx --env-file=.env scripts/ingest.ts",
+    "categorize:pending": "node --import tsx --env-file=.env scripts/categorize-pending.ts",
     "start": "node --import tsx --env-file=.env src/main.ts"
   },
   "lint-staged": {
