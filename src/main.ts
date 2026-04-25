@@ -40,6 +40,10 @@ import {
   getPatrimonyHistoryToolDefinition,
   handleGetPatrimonyHistory,
 } from './module/patrimony/mcp/getPatrimonyHistoryTool.js';
+import {
+  getNetWorthToolDefinition,
+  handleGetNetWorth,
+} from './module/networth/mcp/getNetWorthTool.js';
 
 async function main(): Promise<void> {
   const spreadsheetId = process.env.SPREADSHEET_ID;
@@ -79,6 +83,7 @@ async function main(): Promise<void> {
       listInvestmentsToolDefinition,
       portfolioSummaryToolDefinition,
       getPatrimonyHistoryToolDefinition,
+      getNetWorthToolDefinition,
     ],
   }));
 
@@ -108,6 +113,10 @@ async function main(): Promise<void> {
     }
     if (request.params.name === getPatrimonyHistoryToolDefinition.name) {
       const text = await handleGetPatrimonyHistory(patrimonyRepo);
+      return { content: [{ type: 'text', text }] };
+    }
+    if (request.params.name === getNetWorthToolDefinition.name) {
+      const text = await handleGetNetWorth(cashflowRepo, investmentsRepo, patrimonyRepo);
       return { content: [{ type: 'text', text }] };
     }
     throw new Error(`Unknown tool: ${request.params.name}`);

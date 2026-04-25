@@ -63,6 +63,14 @@ Add to your MCP client config (e.g. Claude Desktop's `claude_desktop_config.json
 - `list_investments({ platform?, assetClass? })` — list investment positions, optionally filtered.
 - `get_portfolio_summary` — totals invested per platform and per asset class.
 
+**Patrimony:**
+
+- `get_patrimony_history` — yearly net worth snapshots, oldest to newest.
+
+**Combined:**
+
+- `get_net_worth` — cash + invested principal + last patrimony snapshot, with delta vs the snapshot.
+
 ## Architecture
 
 Hexagonal/clean. Each module under `src/module/{name}` exposes its `domain` (entities and repository interfaces), `application` (use cases) and `infrastructure` (concrete adapters, including MCP tool handlers).
