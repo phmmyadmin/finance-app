@@ -20,6 +20,9 @@ const tx = (
 
 const fakeRepo = (transactions: Transaction[]): CashflowRepository => ({
   listAll: async () => transactions,
+  appendMany: async () => {
+    throw new Error('appendMany not used in this test');
+  },
 });
 
 const descriptions = (json: string): string[] =>

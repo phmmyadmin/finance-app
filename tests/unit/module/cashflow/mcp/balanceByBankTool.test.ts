@@ -8,6 +8,9 @@ import type { Transaction } from '../../../../../src/module/cashflow/domain/Tran
 
 const fakeRepo = (transactions: Transaction[]): CashflowRepository => ({
   listAll: async () => transactions,
+  appendMany: async () => {
+    throw new Error('appendMany not used in this test');
+  },
 });
 
 const tx = (amount: number, bank: string | null): Transaction => ({
