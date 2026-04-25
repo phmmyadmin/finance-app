@@ -21,6 +21,10 @@ import {
 import { readBbvaXlsx } from './module/cashflow/infrastructure/imports/readBbvaXlsx.js';
 import { readSabadellXls } from './module/cashflow/infrastructure/imports/readSabadellXls.js';
 import { readRevolutCsv } from './module/cashflow/infrastructure/imports/readRevolutCsv.js';
+import { resolveBankExportFile } from './module/cashflow/mcp/resolveBankExportFile.js';
+import { homedir } from 'node:os';
+import { readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { SheetsInvestmentsRepository } from './module/investments/infrastructure/SheetsInvestmentsRepository.js';
 import {
   handleListInvestments,
@@ -45,6 +49,16 @@ async function main(): Promise<void> {
     sabadell: readSabadellXls,
     revolut: readRevolutCsv,
   };
+  const fsAdapter = {
+    homedir: homedir(),
+    listDirectory: (dir: string) =>
+      readdirSync(dir).map((name) => ({
+        name,
+        mtimeMs: statSync(join(dir, name)).mtimeMs,
+      })),
+  };
+  const resolveFile = (bank: string, hint: string | undefined) =>
+    resolveBankExportFile(bank, hint, fsAdapter);
 
   const server = new Server(
     { name: 'finance-app', version: '0.0.1' },
@@ -72,8 +86,8 @@ async function main(): Promise<void> {
       return { content: [{ type: 'text', text }] };
     }
     if (request.params.name === ingestBankExportToolDefinition.name) {
-      const args = (request.params.arguments ?? {}) as { bank?: string; filePath?: string };
-      const text = await handleIngestBankExport(cashflowRepo, bankReaders, args);
+      const args = (request.params.arguments ?? {}) as { bank?: string; file?: string };
+      const text = await handleIngestBankExport(cashflowRepo, bankReaders, resolveFile, args);
       return { content: [{ type: 'text', text }] };
     }
     if (request.params.name === listInvestmentsToolDefinition.name) {

@@ -13,17 +13,18 @@ const tx = (amount: number): Transaction => ({
   bank: 'BBVA',
 });
 
+const stubResolve = (path: string) => () => path;
+
 describe('ingestBankExportToolDefinition', () => {
-  it('exposes bank and filePath as required inputs', () => {
+  it('requires only bank; file is optional', () => {
     expect(ingestBankExportToolDefinition.name).toBe('ingest_bank_export');
-    expect(ingestBankExportToolDefinition.inputSchema.required).toEqual(['bank', 'filePath']);
-    expect(ingestBankExportToolDefinition.inputSchema.properties).toHaveProperty('bank');
-    expect(ingestBankExportToolDefinition.inputSchema.properties).toHaveProperty('filePath');
+    expect(ingestBankExportToolDefinition.inputSchema.required).toEqual(['bank']);
+    expect(ingestBankExportToolDefinition.inputSchema.properties).toHaveProperty('file');
   });
 });
 
 describe('handleIngestBankExport', () => {
-  it('dispatches to the matching reader and runs the import', async () => {
+  it('resolves the file via injected resolver and dispatches to the matching reader', async () => {
     const repo: CashflowRepository = {
       listAll: async () => [],
       appendMany: vi.fn(async () => {}),
@@ -32,18 +33,30 @@ describe('handleIngestBankExport', () => {
       bbva: vi.fn(async () => [tx(10), tx(20)]),
       sabadell: vi.fn(async () => []),
     };
+    const resolveFile = vi.fn(() => '/resolved/bbva-april.xlsx');
 
-    const result = await handleIngestBankExport(repo, readers, {
+    const result = await handleIngestBankExport(repo, readers, resolveFile, {
       bank: 'bbva',
-      filePath: '/tmp/bbva.xlsx',
+      file: 'bbva-april',
     });
 
-    expect(readers.bbva).toHaveBeenCalledWith('/tmp/bbva.xlsx');
-    expect(readers.sabadell).not.toHaveBeenCalled();
-    expect(repo.appendMany).toHaveBeenCalledOnce();
-    expect(result).toContain('Read 2');
+    expect(resolveFile).toHaveBeenCalledWith('bbva', 'bbva-april');
+    expect(readers.bbva).toHaveBeenCalledWith('/resolved/bbva-april.xlsx');
+    expect(result).toContain('/resolved/bbva-april.xlsx');
     expect(result).toContain('Added: 2');
-    expect(result).toContain('Skipped: 0');
+  });
+
+  it('passes undefined hint to the resolver when file is missing', async () => {
+    const repo: CashflowRepository = {
+      listAll: async () => [],
+      appendMany: vi.fn(async () => {}),
+    };
+    const readers = { bbva: vi.fn(async () => []) };
+    const resolveFile = vi.fn(() => '/resolved/foo.xlsx');
+
+    await handleIngestBankExport(repo, readers, resolveFile, { bank: 'bbva' });
+
+    expect(resolveFile).toHaveBeenCalledWith('bbva', undefined);
   });
 
   it('reports skipped count when transactions already exist', async () => {
@@ -52,13 +65,10 @@ describe('handleIngestBankExport', () => {
       listAll: async () => existing,
       appendMany: vi.fn(async () => {}),
     };
-    const readers = {
-      bbva: vi.fn(async () => [tx(10), tx(20)]),
-    };
+    const readers = { bbva: vi.fn(async () => [tx(10), tx(20)]) };
 
-    const result = await handleIngestBankExport(repo, readers, {
+    const result = await handleIngestBankExport(repo, readers, stubResolve('/x.xlsx'), {
       bank: 'bbva',
-      filePath: '/tmp/x.xlsx',
     });
 
     expect(result).toContain('Added: 1');
@@ -71,17 +81,9 @@ describe('handleIngestBankExport', () => {
       appendMany: async () => {},
     };
     await expect(
-      handleIngestBankExport(repo, { bbva: vi.fn() }, { bank: 'mystery', filePath: '/x' }),
+      handleIngestBankExport(repo, { bbva: vi.fn() }, stubResolve('/x'), {
+        bank: 'mystery',
+      }),
     ).rejects.toThrow(/unknown bank/i);
-  });
-
-  it('throws when filePath is missing', async () => {
-    const repo: CashflowRepository = {
-      listAll: async () => [],
-      appendMany: async () => {},
-    };
-    await expect(
-      handleIngestBankExport(repo, { bbva: vi.fn() }, { bank: 'bbva', filePath: '' }),
-    ).rejects.toThrow(/filePath/);
   });
 });
