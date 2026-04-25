@@ -1,0 +1,55 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "finance",
+  "title": "Finance",
+  "description": "Personal finance dashboard backed by the finance-app Sheets repos.",
+  "icon": "command-icon.png",
+  "author": "pablo",
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "menubar",
+      "title": "Finance Menubar",
+      "description": "Current month spending and net worth in the menubar.",
+      "mode": "menu-bar",
+      "interval": "1d"
+    }
+  ],
+  "preferences": [
+    {
+      "name": "financeAppPath",
+      "title": "finance-app path",
+      "description": "Absolute path to the finance-app project (where .env, scripts/ and src/ live).",
+      "type": "textfield",
+      "required": true,
+      "default": "/Users/pablo/workspace/finance-app"
+    },
+    {
+      "name": "nodePath",
+      "title": "Node binary path",
+      "description": "Absolute path to the node binary (run `which node` in your terminal).",
+      "type": "textfield",
+      "required": true,
+      "default": "/opt/homebrew/bin/node"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.84.0",
+    "@raycast/utils": "^1.18.0"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.11",
+    "@types/node": "^22.13.10",
+    "@types/react": "^18.3.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.4.0",
+    "typescript": "^5.6.0"
+  },
+  "scripts": {
+    "build": "ray build",
+    "dev": "NODE_OPTIONS=--no-deprecation ray develop",
+    "lint": "ray lint",
+    "fix-lint": "ray lint --fix",
+    "reload": "launchctl kickstart -k gui/$(id -u)/com.pablo.raycast-finance"
+  }
+}
