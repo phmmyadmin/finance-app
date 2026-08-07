@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import { categorize } from '../utils/categorize';
 
 const Ingest: React.FC = () => {
@@ -17,15 +18,26 @@ const Ingest: React.FC = () => {
     }
   }, []);
 
-  const processFile = (file: File) => {
+  const processFile = async (file: File) => {
     setFile(file);
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        setParsedData(results.data); // Store all parsed rows, don't slice!
-      }
-    });
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    
+    if (ext === 'xls' || ext === 'xlsx') {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: "" });
+      setParsedData(jsonData);
+    } else {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          setParsedData(results.data);
+        }
+      });
+    }
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -206,13 +218,13 @@ const Ingest: React.FC = () => {
         <input 
           id="file-upload" 
           type="file" 
-          accept=".csv" 
+          accept=".csv,.tsv,.xls,.xlsx" 
           style={{ display: 'none' }} 
           onChange={handleChange}
         />
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>📁</div>
         <h3>Sube tu extracto</h3>
-        <p style={{ color: 'var(--text-muted)' }}>Arrastra aquí un archivo de tu banco (BBVA, Sabadell, Revolut, Trade Republic) o haz clic para seleccionar.</p>
+        <p style={{ color: 'var(--text-muted)' }}>Arrastra aquí un archivo CSV, Excel (.xlsx, .xls) o TSV de tu banco, o haz clic para seleccionar.</p>
       </div>
 
       {file && parsedData.length > 0 && (
