@@ -25,10 +25,37 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
           throw new Error("Missing VITE_SPREADSHEET_ID in .env");
         }
 
-        // We assume a sheet named "Dashboard" exists with basic key-value data for now.
-        // In a real scenario, you'd fetch specific ranges or use a generic range.
+        // 1. Obtener la metadata del Spreadsheet para descubrir el nombre de la primera hoja
+        const metaResponse = await fetch(
+          `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!metaResponse.ok) {
+          let errorMsg = "Error al obtener metadata del Spreadsheet.";
+          try {
+            const errorResult = await metaResponse.json();
+            if (errorResult.error && errorResult.error.message) {
+              errorMsg = `Google Sheets API Error: ${errorResult.error.message}`;
+            }
+          } catch (e) {}
+          throw new Error(errorMsg);
+        }
+
+        const metaResult = await metaResponse.json();
+        const firstSheetName = metaResult.sheets?.[0]?.properties?.title;
+
+        if (!firstSheetName) {
+          throw new Error("No se encontraron hojas en el documento.");
+        }
+
+        // 2. Fetch the actual data from the first sheet
         const response = await fetch(
-          `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Dashboard!A1:B10`,
+          `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/'${firstSheetName}'!A1:B10`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -37,7 +64,14 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
         );
 
         if (!response.ok) {
-          throw new Error("Error al acceder a Google Sheets. Verifica los permisos o el ID.");
+          let errorMsg = "Error al obtener datos de la hoja.";
+          try {
+            const errorResult = await response.json();
+            if (errorResult.error && errorResult.error.message) {
+              errorMsg = `Google Sheets API Error: ${errorResult.error.message}`;
+            }
+          } catch (e) {}
+          throw new Error(errorMsg);
         }
 
         const result = await response.json();
