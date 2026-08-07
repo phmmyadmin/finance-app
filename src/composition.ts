@@ -7,6 +7,7 @@ import { SheetsCashflowRepository } from './module/cashflow/infrastructure/Sheet
 import { readBbvaXlsx } from './module/cashflow/infrastructure/imports/readBbvaXlsx.js';
 import { readSabadellXls } from './module/cashflow/infrastructure/imports/readSabadellXls.js';
 import { readRevolutCsv } from './module/cashflow/infrastructure/imports/readRevolutCsv.js';
+import { readTradeRepublicCsv } from './module/cashflow/infrastructure/imports/readTradeRepublicCsv.js';
 import { resolveBankExportFile } from './module/cashflow/mcp/resolveBankExportFile.js';
 import type { BankReaders } from './module/cashflow/mcp/ingestBankExportTool.js';
 import { SheetsInvestmentsRepository } from './module/investments/infrastructure/SheetsInvestmentsRepository.js';
@@ -44,6 +45,7 @@ export async function buildAppContext(): Promise<AppContext> {
     bbva: readBbvaXlsx,
     sabadell: readSabadellXls,
     revolut: readRevolutCsv,
+    trade_republic: readTradeRepublicCsv,
   };
 
   const fsAdapter = {
