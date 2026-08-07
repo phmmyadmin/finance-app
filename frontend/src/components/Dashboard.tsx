@@ -56,14 +56,12 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
         // 1. Patrimony from General
         let totalPatrimony = 0;
         const generalRows = valueRanges.find((r: any) => r.range.includes('General'))?.values || [];
-        console.log("General rows:", generalRows);
         
         let foundVal = undefined;
         for (let i = 0; i < generalRows.length; i++) {
           const row = generalRows[i];
           const idx = row.findIndex((c: any) => String(c).toLowerCase().includes('current patrimony'));
           if (idx !== -1) {
-            console.log(`Found Current Patrimony at row ${i}, col ${idx}`);
             
             const right1 = idx + 1 < row.length ? row[idx + 1] : undefined;
             const right2 = idx + 2 < row.length ? row[idx + 2] : undefined;
@@ -81,13 +79,10 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
             // Or headers in a column and values to the right. Let's try below first, then right.
             if (isValidNumber(below)) {
               foundVal = below;
-              console.log("Value found below:", foundVal);
             } else if (isValidNumber(right1)) {
               foundVal = right1;
-              console.log("Value found at right (idx+1):", foundVal);
             } else if (isValidNumber(right2)) {
               foundVal = right2;
-              console.log("Value found at right (idx+2):", foundVal);
             }
             break;
           }
