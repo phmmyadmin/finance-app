@@ -4,11 +4,17 @@ interface DashboardProps {
   token: string | null;
 }
 
+interface PatrimonyData {
+  year: number;
+  value: number;
+}
+
 interface DashboardData {
   patrimony: string;
   investments: string;
   monthSpending: string;
   topCategories: { name: string; amount: string; count: number }[];
+  patrimonyHistory: PatrimonyData[];
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ token }) => {
@@ -26,7 +32,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
         }
 
         const platformSheets = ['MyInvestor', 'Urbanitae', 'Civislend', 'Revolut X', 'Esketit', 'Mintos'];
-        const ranges = ['Patrimony!A2:D', 'Cash!A2:G', 'Valuations!A2:C', ...platformSheets.map(p => `'${p}'!A2:I`)];
+        const ranges = ['General!A:Z', 'Patrimony!A2:D', 'Cash!A2:G', 'Valuations!A2:C', ...platformSheets.map(p => `'${p}'!A2:I`)];
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchGet?ranges=${ranges.join('&ranges=')}&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER`;
 
         const response = await fetch(url, {
@@ -47,12 +53,32 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
         const result = await response.json();
         const valueRanges = result.valueRanges || [];
         
-        // 1. Patrimony
+        // 1. Patrimony from General
         let totalPatrimony = 0;
+        const generalRows = valueRanges.find((r: any) => r.range.includes('General'))?.values || [];
+        for (let i = 0; i < generalRows.length; i++) {
+          const row = generalRows[i];
+          const idx = row.findIndex((c: any) => String(c).toLowerCase().includes('total patrimony'));
+          if (idx !== -1 && idx + 1 < row.length) {
+            const val = row[idx + 1];
+            totalPatrimony = typeof val === 'number' ? val : parseFloat(String(val).replace(/[^0-9.-]+/g, ''));
+            break;
+          }
+        }
+
+        // Patrimony History
         const patrimonyRows = valueRanges.find((r: any) => r.range.includes('Patrimony'))?.values || [];
-        if (patrimonyRows.length > 0) {
-          const lastRow = patrimonyRows[patrimonyRows.length - 1];
-          totalPatrimony = lastRow[1] || 0;
+        const patrimonyHistory: PatrimonyData[] = patrimonyRows.map((r: any[]) => ({
+          year: Number(r[0]),
+          value: Number(r[1])
+        })).filter((h: PatrimonyData) => !isNaN(h.year) && !isNaN(h.value));
+
+        const currentYear = new Date().getFullYear();
+        const existingCurrent = patrimonyHistory.find(h => h.year === currentYear);
+        if (existingCurrent) {
+          existingCurrent.value = totalPatrimony || existingCurrent.value;
+        } else if (totalPatrimony > 0) {
+          patrimonyHistory.push({ year: currentYear, value: totalPatrimony });
         }
 
         // 2. Cash (Gasto del mes)
@@ -64,7 +90,6 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
         const MS_PER_DAY = 86_400_000;
         const now = new Date();
         const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
 
         cashRows.forEach((row: any[]) => {
           const [rawDate, , rawAmount, , , , rawCategory] = row;
@@ -130,7 +155,8 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
           patrimony: formatter.format(totalPatrimony),
           investments: formatter.format(totalInvestments),
           monthSpending: formatter.format(monthSpending),
-          topCategories
+          topCategories,
+          patrimonyHistory
         });
       } catch (err: any) {
         console.error(err);
@@ -147,6 +173,8 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
   if (error) return <div style={{color: 'var(--danger)'}}>{error}</div>;
   if (!data) return null;
 
+  const maxPatrimony = Math.max(...data.patrimonyHistory.map(h => h.value), 1);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
@@ -155,7 +183,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
         <div className="kpi-card">
           <div className="kpi-label">PATRIMONIO</div>
           <div className="kpi-value">{data.patrimony}</div>
-          <div className="kpi-trend pos">Último registro</div>
+          <div className="kpi-trend pos">Actual</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">INVERSIONES</div>
@@ -171,21 +199,31 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
 
       {/* Main Chart */}
       <div className="card">
-        <h3>Evolución de Gasto 📉</h3>
-        <svg viewBox="0 0 600 220" preserveAspectRatio="none" style={{ width: '100%', height: 'auto', marginTop: '16px' }}>
+        <h3>Histórico de Patrimonio 📈</h3>
+        <svg viewBox="0 0 600 240" preserveAspectRatio="none" style={{ width: '100%', height: 'auto', marginTop: '16px' }}>
           <g stroke="var(--border)" strokeWidth="1">
             <line x1="0" y1="50" x2="600" y2="50" />
             <line x1="0" y1="100" x2="600" y2="100" />
             <line x1="0" y1="150" x2="600" y2="150" />
           </g>
-          {/* Dummy bars for now until we have real series data */}
-          <rect x="50" y="100" width="30" height="100" fill="var(--accent-soft)" rx="4" />
-          <rect x="120" y="80" width="30" height="120" fill="var(--accent-soft)" rx="4" />
-          <rect x="190" y="120" width="30" height="80" fill="var(--accent-soft)" rx="4" />
-          <rect x="260" y="40" width="30" height="160" fill="var(--danger)" opacity="0.3" rx="4" />
-          <rect x="330" y="90" width="30" height="110" fill="var(--accent-soft)" rx="4" />
-          <rect x="400" y="130" width="30" height="70" fill="var(--accent-soft)" rx="4" />
-          <rect x="470" y="60" width="30" height="140" fill="var(--accent)" rx="4" />
+          {data.patrimonyHistory.map((h, i) => {
+            const numBars = data.patrimonyHistory.length;
+            const barWidth = Math.min(40, 500 / numBars);
+            const spacing = (600 - (numBars * barWidth)) / (numBars + 1);
+            const x = spacing + i * (barWidth + spacing);
+            const height = (h.value / maxPatrimony) * 160;
+            const y = 200 - height;
+            
+            return (
+              <g key={h.year}>
+                <rect x={x} y={y} width={barWidth} height={height} fill="var(--accent)" rx="4" />
+                <text x={x + barWidth / 2} y="220" fill="var(--text-muted)" fontSize="12" textAnchor="middle">{h.year}</text>
+                <text x={x + barWidth / 2} y={y - 10} fill="var(--text)" fontSize="10" textAnchor="middle">
+                  {(h.value / 1000).toFixed(0)}k
+                </text>
+              </g>
+            );
+          })}
         </svg>
       </div>
 
