@@ -60,18 +60,36 @@ const Ingest: React.FC = () => {
       const isTradeRepublic = 'counterparty_name' in parsedData[0];
       const isRevolut = 'Completed Date' in parsedData[0] || 'Type' in parsedData[0];
       
-      const values: any[] = [];
+      let values: any[] = [];
       let bankName = 'Unknown';
 
-      // 1. Fetch current row count to know where to insert formulas
-      const colAResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Cash!A2:A?valueRenderOption=UNFORMATTED_VALUE`, {
+      // 1. Fetch current rows to calculate index and deduplicate
+      const cashResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Cash!A2:C?valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!colAResponse.ok) throw new Error("Could not fetch Cash!A2:A to calculate row index");
-      const colAData = await colAResponse.json();
-      const startRow = 2 + (colAData.values?.length || 0);
+      if (!cashResponse.ok) throw new Error("Could not fetch Cash data for deduplication");
+      const cashData = await cashResponse.json();
+      
+      const existingRows = cashData.values || [];
+      const startRow = 2 + existingRows.length;
+      
+      // Build a set of existing transactions for deduplication
+      const EXCEL_EPOCH_UTC_MS = Date.UTC(1899, 11, 30);
+      const MS_PER_DAY = 86_400_000;
+      const existingSet = new Set(existingRows.map((r: any[]) => {
+        const dateNum = r[0];
+        const desc = r[1] || '';
+        const amt = r[2] || 0;
+        let dateStr = '';
+        if (typeof dateNum === 'number') {
+          dateStr = new Date(EXCEL_EPOCH_UTC_MS + dateNum * MS_PER_DAY).toISOString().slice(0, 10);
+        } else {
+          dateStr = String(dateNum).trim(); // fallback
+        }
+        return `${dateStr}_${String(desc).trim()}_${amt}`;
+      }));
 
-      parsedData.forEach((row: any, i: number) => {
+      parsedData.forEach((row: any) => {
         let dateStr = '';
         let description = '';
         let amount = 0;
@@ -79,7 +97,7 @@ const Ingest: React.FC = () => {
         if (isTradeRepublic) {
           bankName = 'TRADE_REPUBLIC';
           dateStr = String(row['date'] || '').trim();
-          description = String(row['name'] || row['description'] || '').trim();
+          description = String(row['description'] || row['name'] || '').trim();
           amount = parseFloat(row['amount']);
         } else if (isRevolut) {
           bankName = 'REVOLUT';
@@ -94,21 +112,31 @@ const Ingest: React.FC = () => {
         }
 
         if (dateStr && !isNaN(amount)) {
-          const category = categorize({ description, amount });
-          const r = startRow + values.length; // Current row number in Excel
-          values.push([
-            dateStr,
-            description,
-            amount,
-            `=TODAY()-A${r}`,
-            `=SUM(C$2:C${r})`,
-            bankName,
-            category
-          ]);
+          const dedupeKey = `${dateStr}_${description}_${amount}`;
+          if (!existingSet.has(dedupeKey)) {
+            const category = categorize({ description, amount });
+            const r = startRow + values.length; // Current row number in Excel
+            values.push([
+              dateStr,
+              description,
+              amount,
+              `=TODAY()-A${r}`,
+              `=SUM(C$2:C${r})`,
+              bankName,
+              category
+            ]);
+            existingSet.add(dedupeKey); // Prevent duplicates within the CSV itself
+          }
         }
       });
 
-      if (values.length === 0) throw new Error("No valid rows to ingest");
+      if (values.length === 0) {
+        setIngestSuccess(true);
+        setParsedData([]);
+        setFile(null);
+        alert("No hay transacciones nuevas para ingerir (todas son duplicadas).");
+        return;
+      }
 
       const endRow = startRow + values.length - 1;
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Cash!A${startRow}:G${endRow}?valueInputOption=USER_ENTERED`;

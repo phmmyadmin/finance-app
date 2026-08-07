@@ -19,9 +19,9 @@ export function parseTradeRepublicCsvRow(row: string[]): Transaction | null {
   const name = row[6]?.replace(/"/g, '').trim();
   const desc = row[17]?.replace(/"/g, '').trim();
 
-  let description = name;
+  let description = desc;
   if (!description || description === '') {
-    description = desc || '';
+    description = name || '';
   }
 
   const roundedAmount = Math.round(amount * 100) / 100;
