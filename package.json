@@ -19,6 +19,7 @@
     "categorize:pending": "node --import tsx --env-file=.env scripts/categorize-pending.ts",
     "fix:transfers-self": "node --import tsx --env-file=.env scripts/fix-transfers-self.ts",
     "fix:investments": "node --import tsx --env-file=.env scripts/fix-investments.ts",
+    "report": "node --import tsx --env-file=.env scripts/serve-report.ts",
     "start": "node --import tsx --env-file=.env src/main.ts"
   },
   "lint-staged": {

@@ -24,6 +24,7 @@ pnpm auth              # one-time Google OAuth flow (read + write on Sheets) →
 - `pnpm start` — run the MCP server on stdio
 - `pnpm auth` — bootstrap Google OAuth (one-time)
 - `pnpm ingest <bank> <file>` — import a bank export into the Cash sheet (`bank` ∈ `bbva|sabadell|revolut`)
+- `pnpm report` — start a local HTTP report server (default `http://localhost:8787`). Each request regenerates the dashboard from fresh Sheets data. The header has an "Actualizar" button that simply reloads the page. Override the port via `REPORT_PORT`.
 - `pnpm categorize:pending` — backfill the `category` column for uncategorized rows using a local Ollama model (requires `ollama serve` with the chosen model pulled; defaults to `qwen2.5:3b`). Pair with the cleanup scripts below.
 - `pnpm fix:transfers-self` — revert rows tagged `transfers_self` whose description does not match a known self-transfer pattern back to `uncategorized`.
 - `pnpm fix:investments` — revert rows tagged `investments` whose description does not match a known investment-platform pattern back to `uncategorized`.
@@ -78,6 +79,23 @@ Add to your MCP client config (e.g. Claude Desktop's `claude_desktop_config.json
 
 - `get_net_worth` — cash + investments (latest valuation per platform, fallback to principal) + last patrimony snapshot, with delta vs the snapshot.
 - `get_data_freshness` — staleness of every data source (cash per bank, valuations per platform, patrimony) sorted oldest first.
+
+## HTML report
+
+`pnpm report` boots a local HTTP server (Node's built-in `http`, no extra deps) that renders an HTML dashboard with embedded CSS. Sections:
+
+- KPI summary (net worth, cash, investments, gasto del mes)
+- 12-month spending trend (SVG bar chart)
+- MoM, YoY and 12-month-average comparatives, plus YTD
+- Categories + top expenses for the focus month
+- Balance per bank, recurring subscriptions
+- Investments per platform and per asset class
+- Patrimony history (SVG line chart) with current year delta
+- Annual comparison (last two completed years: income, gasto, savings rate, patrimony delta, top categories Δ)
+- Travel section (configurable trip windows in `scripts/serve-report.ts`)
+- Data freshness
+
+The `↻ Actualizar` button reloads the page; the server pulls fresh data from Google Sheets on every request. There is also a `GET /api/data` endpoint that returns the underlying `ReportData` as JSON.
 
 ## Raycast menubar extension
 
