@@ -97,11 +97,18 @@ const CashViewer: React.FC<CashViewerProps> = ({ token }) => {
   if (loading) return <div>Cargando Cash...</div>;
   if (error) return <div style={{color: 'var(--danger)'}}>{error}</div>;
 
+  const totalBalance = transactions.reduce((sum, t) => sum + t.amount, 0);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3>Gastos e Ingresos 💸</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <h3 style={{ margin: 0 }}>Gastos e Ingresos 💸</h3>
+            <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Total: <strong style={{ color: totalBalance < 0 ? 'var(--text)' : 'var(--accent)' }}>{totalBalance.toFixed(2)} €</strong>
+            </div>
+          </div>
           <button onClick={handleCategorizeAll} style={{
             background: 'var(--accent)',
             color: 'white',
@@ -121,6 +128,7 @@ const CashViewer: React.FC<CashViewerProps> = ({ token }) => {
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 <th style={{ padding: '8px' }}>Fecha</th>
+                <th style={{ padding: '8px' }}>Banco</th>
                 <th style={{ padding: '8px' }}>Concepto</th>
                 <th style={{ padding: '8px', textAlign: 'right' }}>Importe</th>
                 <th style={{ padding: '8px' }}>Categoría</th>
@@ -130,6 +138,7 @@ const CashViewer: React.FC<CashViewerProps> = ({ token }) => {
               {transactions.map(t => (
                 <tr key={t.rowNumber} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '8px', color: 'var(--text-muted)' }}>{t.date}</td>
+                  <td style={{ padding: '8px', color: 'var(--text-muted)' }}>{t.bank}</td>
                   <td style={{ padding: '8px', color: 'var(--text-muted)', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.description}</td>
                   <td style={{ padding: '8px', textAlign: 'right', fontWeight: 600, color: t.amount < 0 ? 'var(--text)' : 'var(--accent)' }}>
                     {t.amount.toFixed(2)} €
