@@ -64,27 +64,40 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
           const idx = row.findIndex((c: any) => String(c).toLowerCase().includes('current patrimony'));
           if (idx !== -1) {
             console.log(`Found Current Patrimony at row ${i}, col ${idx}`);
-            // Check right
-            if (idx + 1 < row.length && row[idx + 1] !== '' && row[idx + 1] != null) {
-               foundVal = row[idx + 1];
-               console.log("Value found at right (idx+1):", foundVal);
-            } 
-            // Check right+1
-            else if (idx + 2 < row.length && row[idx + 2] !== '' && row[idx + 2] != null) {
-               foundVal = row[idx + 2];
-               console.log("Value found at right (idx+2):", foundVal);
-            } 
-            // Check below
-            else if (i + 1 < generalRows.length && generalRows[i + 1][idx] !== '' && generalRows[i + 1][idx] != null) {
-               foundVal = generalRows[i + 1][idx];
-               console.log("Value found below:", foundVal);
+            
+            const right1 = idx + 1 < row.length ? row[idx + 1] : undefined;
+            const right2 = idx + 2 < row.length ? row[idx + 2] : undefined;
+            const below = i + 1 < generalRows.length ? generalRows[i + 1][idx] : undefined;
+            
+            // Helper to check if a value looks like a number
+            const isValidNumber = (val: any) => {
+              if (val === undefined || val === null || val === '') return false;
+              if (typeof val === 'number') return true;
+              const parsed = parseFloat(String(val).replace(/[^0-9.-]+/g, ''));
+              return !isNaN(parsed);
+            };
+
+            // It's common for headers to be in a row and values directly below them.
+            // Or headers in a column and values to the right. Let's try below first, then right.
+            if (isValidNumber(below)) {
+              foundVal = below;
+              console.log("Value found below:", foundVal);
+            } else if (isValidNumber(right1)) {
+              foundVal = right1;
+              console.log("Value found at right (idx+1):", foundVal);
+            } else if (isValidNumber(right2)) {
+              foundVal = right2;
+              console.log("Value found at right (idx+2):", foundVal);
             }
             break;
           }
         }
 
         if (foundVal !== undefined) {
-          totalPatrimony = typeof foundVal === 'number' ? foundVal : parseFloat(String(foundVal).replace(/[^0-9.-]+/g, ''));
+          const parsed = typeof foundVal === 'number' ? foundVal : parseFloat(String(foundVal).replace(/[^0-9.-]+/g, ''));
+          if (!isNaN(parsed)) {
+            totalPatrimony = parsed;
+          }
         }
 
         // Patrimony History
