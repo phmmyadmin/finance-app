@@ -5,12 +5,12 @@ import Ingest from './components/Ingest';
 import Chat from './components/Chat';
 
 function App() {
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('google_token'));
   const [activeTab, setActiveTab] = useState<'dashboard' | 'ingest' | 'chat'>('dashboard');
 
   const login = useGoogleLogin({
     onSuccess: (codeResponse) => {
-      // In a real app, you'd store this securely or exchange it
+      localStorage.setItem('google_token', codeResponse.access_token);
       setToken(codeResponse.access_token);
     },
     onError: (error) => console.log('Login Failed:', error),
