@@ -25,49 +25,19 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
           throw new Error("Missing VITE_SPREADSHEET_ID in .env");
         }
 
-        // 1. Obtener la metadata del Spreadsheet para descubrir el nombre de la primera hoja
-        const metaResponse = await fetch(
-          `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        // Usamos batchGet para traer las hojas que nos interesan basadas en la estructura del backend
+        const ranges = ['Patrimony!A2:D', 'Cash!A2:G', 'Valuations!A2:C'];
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchGet?ranges=${ranges.join('&ranges=')}&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER`;
 
-        if (!metaResponse.ok) {
-          let errorMsg = "Error al obtener metadata del Spreadsheet.";
-          try {
-            const errorResult = await metaResponse.json();
-            if (errorResult.error && errorResult.error.message) {
-              errorMsg = `Google Sheets API Error: ${errorResult.error.message}`;
-            }
-          } catch (e) {}
-          throw new Error(errorMsg);
-        }
-
-        const metaResult = await metaResponse.json();
-        const firstSheetName = metaResult.sheets?.[0]?.properties?.title;
-
-        if (!firstSheetName) {
-          throw new Error("No se encontraron hojas en el documento.");
-        }
-
-        // 2. Fetch the actual data from the first sheet
-        const response = await fetch(
-          `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/'${firstSheetName}'!A1:B10`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
         if (!response.ok) {
-          let errorMsg = "Error al obtener datos de la hoja.";
+          let errorMsg = "Error al obtener datos de Google Sheets.";
           try {
             const errorResult = await response.json();
-            if (errorResult.error && errorResult.error.message) {
+            if (errorResult.error?.message) {
               errorMsg = `Google Sheets API Error: ${errorResult.error.message}`;
             }
           } catch (e) {}
@@ -75,22 +45,77 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
         }
 
         const result = await response.json();
-        const rows = result.values || [];
+        const valueRanges = result.valueRanges || [];
         
-        // Very basic mapping for demonstration. You would parse your actual sheet structure here.
-        const getValue = (key: string) => {
-          const row = rows.find((r: any[]) => r[0] === key);
-          return row ? row[1] : "0 €";
-        };
+        // 1. Patrimony
+        let totalPatrimony = 0;
+        const patrimonyRows = valueRanges.find((r: any) => r.range.includes('Patrimony'))?.values || [];
+        if (patrimonyRows.length > 0) {
+          // Última fila, columna índice 1
+          const lastRow = patrimonyRows[patrimonyRows.length - 1];
+          totalPatrimony = lastRow[1] || 0;
+        }
+
+        // 2. Cash (Gasto del mes)
+        const cashRows = valueRanges.find((r: any) => r.range.includes('Cash'))?.values || [];
+        let monthSpending = 0;
+        const categoryMap = new Map<string, { amount: number, count: number }>();
+        
+        const EXCEL_EPOCH_UTC_MS = Date.UTC(1899, 11, 30);
+        const MS_PER_DAY = 86_400_000;
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        cashRows.forEach((row: any[]) => {
+          const [rawDate, , rawAmount, , , , rawCategory] = row;
+          if (typeof rawDate === 'number' && typeof rawAmount === 'number' && rawAmount < 0) {
+            const date = new Date(EXCEL_EPOCH_UTC_MS + rawDate * MS_PER_DAY);
+            if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+              monthSpending += Math.abs(rawAmount);
+              
+              const cat = rawCategory || 'uncategorized';
+              const current = categoryMap.get(cat) || { amount: 0, count: 0 };
+              categoryMap.set(cat, { amount: current.amount + Math.abs(rawAmount), count: current.count + 1 });
+            }
+          }
+        });
+
+        // Top Categorías
+        const topCategories = Array.from(categoryMap.entries())
+          .map(([name, data]) => ({ name, amount: data.amount, count: data.count }))
+          .sort((a, b) => b.amount - a.amount)
+          .slice(0, 3)
+          .map(c => ({ ...c, amount: `${c.amount.toFixed(2)} €` }));
+
+        // 3. Valuations (Inversiones)
+        const valuationsRows = valueRanges.find((r: any) => r.range.includes('Valuations'))?.values || [];
+        const latestValuationByPlatform = new Map<string, number>();
+        const latestAtByPlatform = new Map<string, number>();
+
+        valuationsRows.forEach((row: any[]) => {
+          const [rawDate, platform, value] = row;
+          if (typeof rawDate === 'number' && platform && typeof value === 'number') {
+            const previous = latestAtByPlatform.get(platform);
+            if (previous === undefined || rawDate > previous) {
+              latestAtByPlatform.set(platform, rawDate);
+              latestValuationByPlatform.set(platform, value);
+            }
+          }
+        });
+
+        let totalInvestments = 0;
+        latestValuationByPlatform.forEach(value => {
+          totalInvestments += value;
+        });
+
+        const formatter = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });
 
         setData({
-          patrimony: getValue("Patrimonio"),
-          investments: getValue("Inversiones"),
-          monthSpending: getValue("Gasto Mes"),
-          topCategories: [
-            { name: "Restaurantes", amount: getValue("Cat_Restaurantes"), count: 14 },
-            { name: "Compra", amount: getValue("Cat_Compra"), count: 4 },
-          ]
+          patrimony: formatter.format(totalPatrimony),
+          investments: formatter.format(totalInvestments),
+          monthSpending: formatter.format(monthSpending),
+          topCategories
         });
       } catch (err: any) {
         console.error(err);
@@ -115,17 +140,17 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
         <div className="kpi-card">
           <div className="kpi-label">PATRIMONIO</div>
           <div className="kpi-value">{data.patrimony}</div>
-          <div className="kpi-trend pos">Actualizado hoy</div>
+          <div className="kpi-trend pos">Último registro</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">INVERSIONES</div>
           <div className="kpi-value">{data.investments}</div>
-          <div className="kpi-trend pos">Actualizado hoy</div>
+          <div className="kpi-trend pos">Basado en Valuations</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">GASTO MES</div>
           <div className="kpi-value">{data.monthSpending}</div>
-          <div className="kpi-trend neg">Actualizado hoy</div>
+          <div className="kpi-trend neg">Mes actual</div>
         </div>
       </div>
 
@@ -151,16 +176,18 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
 
       {/* Top Expenses List */}
       <div className="card">
-        <h3>Top Categorías 🍔</h3>
-        {data.topCategories.map((cat, i) => (
+        <h3>Top Categorías (Mes actual) 🍔</h3>
+        {data.topCategories.length > 0 ? data.topCategories.map((cat, i) => (
           <div key={i} className="list-item">
             <div>
-              <div style={{ fontWeight: 600 }}>{cat.name}</div>
+              <div style={{ fontWeight: 600, textTransform: 'capitalize' }}>{cat.name}</div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{cat.count} transacciones</div>
             </div>
             <div style={{ fontWeight: 600, color: 'var(--text)' }}>{cat.amount}</div>
           </div>
-        ))}
+        )) : (
+          <div style={{ color: 'var(--text-muted)', marginTop: '10px' }}>No hay gastos registrados este mes.</div>
+        )}
       </div>
       
     </div>
