@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import Dashboard from './components/Dashboard';
 import Ingest from './components/Ingest';
+import Chat from './components/Chat';
 
 function App() {
   const [token, setToken] = useState<string | null>(null);
@@ -65,21 +66,11 @@ function App() {
         )}
 
         {activeTab === 'chat' && (
-          <div className="chat-container">
-            <div className="chat-bubble ai">¡Hola! Soy tu asistente financiero. ¿Qué necesitas?</div>
-            <div className="chat-bubble user">¿Cuánto gasté en restaurantes?</div>
-          </div>
+          <Chat />
         )}
       </div>
 
-      {activeTab === 'chat' && (
-        <div className="chat-input-area">
-          <div className="chat-input-wrapper">
-            <input type="text" className="chat-input" placeholder="Pregunta algo..." />
-            <button className="chat-send">↑</button>
-          </div>
-        </div>
-      )}
+
 
       <nav className="bottom-bar">
         <button className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
