@@ -51,14 +51,31 @@ function App() {
   return (
     <>
       <div className="container" style={{ paddingBottom: '100px' }}>
-        <header style={{ marginBottom: '24px' }}>
-          <h1>
+        <header style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h1 style={{ margin: 0 }}>
             {activeTab === 'dashboard' && 'Resumen 📊'}
             {activeTab === 'cash' && 'Gastos 💸'}
             {activeTab === 'investments' && 'Inversiones 📈'}
             {activeTab === 'ingest' && 'Ingesta 📥'}
             {activeTab === 'chat' && 'Asistente 💬'}
           </h1>
+          <button 
+            onClick={() => {
+              localStorage.removeItem('google_token');
+              setToken(null);
+            }}
+            style={{
+              background: 'transparent',
+              color: 'var(--text)',
+              border: '1px solid var(--text)',
+              padding: '6px 12px',
+              borderRadius: '16px',
+              fontSize: '12px',
+              cursor: 'pointer'
+            }}
+          >
+            Salir 🚪
+          </button>
         </header>
 
         {activeTab === 'dashboard' && <Dashboard token={token} />}
