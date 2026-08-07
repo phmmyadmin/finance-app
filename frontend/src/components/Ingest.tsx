@@ -107,12 +107,12 @@ const Ingest: React.FC = () => {
         };
 
         if (isTradeRepublic) {
-          bankName = 'TRADE_REPUBLIC';
+          bankName = 'Trade Republic';
           dateStr = String(row['date'] || '').trim();
           description = String(row['description'] || row['name'] || '').trim();
           amount = parseFloat(row['amount']);
         } else if (isRevolut) {
-          bankName = 'REVOLUT';
+          bankName = 'Revolut';
           const dateRaw = getVal(row, ['completed date', 'started date', 'fecha de inicio', 'fecha de fin']);
           dateStr = dateRaw.trim().split(' ')[0];
           description = getVal(row, ['description', 'descrip']);
