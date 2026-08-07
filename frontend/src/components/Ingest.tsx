@@ -44,8 +44,97 @@ const Ingest: React.FC = () => {
     }
   };
 
+  const [isIngesting, setIsIngesting] = useState(false);
+  const [ingestSuccess, setIngestSuccess] = useState(false);
+
+  const handleIngest = async () => {
+    if (!parsedData.length || !file) return;
+    setIsIngesting(true);
+
+    try {
+      // 1. Detect bank and map to Cash format
+      const token = localStorage.getItem('google_token');
+      const spreadsheetId = import.meta.env.VITE_SPREADSHEET_ID;
+      if (!token || !spreadsheetId) throw new Error("Missing auth or spreadsheet ID");
+
+      const isTradeRepublic = 'counterparty_name' in parsedData[0];
+      const isRevolut = 'Completed Date' in parsedData[0] || 'Type' in parsedData[0];
+      
+      const values: any[] = [];
+      let bankName = 'Unknown';
+
+      // Very simple mapping for the frontend ingest
+      parsedData.forEach((row: any) => {
+        let dateStr = '';
+        let description = '';
+        let amount = 0;
+        
+        if (isTradeRepublic) {
+          bankName = 'TRADE_REPUBLIC';
+          dateStr = String(row['date'] || '').trim();
+          description = String(row['name'] || row['description'] || '').trim();
+          amount = parseFloat(row['amount']);
+        } else if (isRevolut) {
+          bankName = 'REVOLUT';
+          dateStr = String(row['Completed Date'] || row['Started Date'] || '').trim().split(' ')[0];
+          description = String(row['Description'] || '').trim();
+          amount = parseFloat(row['Amount']);
+        } else {
+          // Fallback generic
+          bankName = 'OTHER';
+          dateStr = new Date().toISOString().slice(0, 10);
+          description = JSON.stringify(row);
+          amount = 0;
+        }
+
+        if (dateStr && !isNaN(amount)) {
+          values.push([
+            dateStr,
+            description,
+            amount,
+            '', // Formula D will be filled by backend/sheets ideally, but we can't easily append formulas dynamically without knowing the row here. Actually, we can just leave empty if it's not strictly required, or write a dummy.
+            '', // Formula E
+            bankName,
+            'uncategorized'
+          ]);
+        }
+      });
+
+      if (values.length === 0) throw new Error("No valid rows to ingest");
+
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Cash!A:G:append?valueInputOption=USER_ENTERED`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ values })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || "Failed to append");
+      }
+
+      setIngestSuccess(true);
+      setParsedData([]);
+      setFile(null);
+      
+    } catch (err: any) {
+      alert("Error ingiriendo datos: " + err.message);
+    } finally {
+      setIsIngesting(false);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {ingestSuccess && (
+        <div style={{ padding: '16px', background: 'var(--accent)', color: 'white', borderRadius: '8px', textAlign: 'center' }}>
+          ¡Datos ingeridos correctamente a tu hoja Cash!
+        </div>
+      )}
       <div 
         className={`card ${dragActive ? 'drag-active' : ''}`}
         style={{ 
@@ -59,7 +148,10 @@ const Ingest: React.FC = () => {
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        onClick={() => document.getElementById('file-upload')?.click()}
+        onClick={() => {
+          setIngestSuccess(false);
+          document.getElementById('file-upload')?.click();
+        }}
       >
         <input 
           id="file-upload" 
@@ -73,30 +165,33 @@ const Ingest: React.FC = () => {
         <p style={{ color: 'var(--text-muted)' }}>Arrastra aquí un archivo de tu banco (BBVA, Sabadell, Revolut, Trade Republic) o haz clic para seleccionar.</p>
       </div>
 
-      {file && (
+      {file && parsedData.length > 0 && (
         <div className="card">
           <h3>Vista Previa ({file.name})</h3>
           <div style={{ overflowX: 'auto', marginTop: '16px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  {parsedData.length > 0 && Object.keys(parsedData[0]).map(key => (
+                  {Object.keys(parsedData[0]).map(key => (
                     <th key={key} style={{ padding: '8px' }}>{key}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {parsedData.map((row, i) => (
+                {parsedData.slice(0, 5).map((row, i) => (
                   <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
                     {Object.values(row).map((val: any, j) => (
-                      <td key={j} style={{ padding: '8px', color: 'var(--text-muted)' }}>{val}</td>
+                      <td key={j} style={{ padding: '8px', color: 'var(--text-muted)' }}>{String(val)}</td>
                     ))}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <button style={{
+          <button 
+            onClick={handleIngest}
+            disabled={isIngesting}
+            style={{
             marginTop: '20px',
             background: 'var(--accent)',
             color: 'white',
@@ -105,10 +200,11 @@ const Ingest: React.FC = () => {
             borderRadius: '24px',
             fontSize: '14px',
             fontWeight: 600,
-            cursor: 'pointer',
+            cursor: isIngesting ? 'not-allowed' : 'pointer',
+            opacity: isIngesting ? 0.7 : 1,
             width: '100%'
           }}>
-            Ingerir Datos
+            {isIngesting ? 'Ingiriendo...' : 'Ingerir Datos'}
           </button>
         </div>
       )}

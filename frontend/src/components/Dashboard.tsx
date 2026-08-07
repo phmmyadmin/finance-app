@@ -25,8 +25,8 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
           throw new Error("Missing VITE_SPREADSHEET_ID in .env");
         }
 
-        // Usamos batchGet para traer las hojas que nos interesan basadas en la estructura del backend
-        const ranges = ['Patrimony!A2:D', 'Cash!A2:G', 'Valuations!A2:C'];
+        const platformSheets = ['MyInvestor', 'Urbanitae', 'Civislend', 'Revolut X', 'Esketit', 'Mintos'];
+        const ranges = ['Patrimony!A2:D', 'Cash!A2:G', 'Valuations!A2:C', ...platformSheets.map(p => `'${p}'!A2:I`)];
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchGet?ranges=${ranges.join('&ranges=')}&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER`;
 
         const response = await fetch(url, {
@@ -51,7 +51,6 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
         let totalPatrimony = 0;
         const patrimonyRows = valueRanges.find((r: any) => r.range.includes('Patrimony'))?.values || [];
         if (patrimonyRows.length > 0) {
-          // Última fila, columna índice 1
           const lastRow = patrimonyRows[patrimonyRows.length - 1];
           totalPatrimony = lastRow[1] || 0;
         }
@@ -73,7 +72,6 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
             const date = new Date(EXCEL_EPOCH_UTC_MS + rawDate * MS_PER_DAY);
             if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
               monthSpending += Math.abs(rawAmount);
-              
               const cat = rawCategory || 'uncategorized';
               const current = categoryMap.get(cat) || { amount: 0, count: 0 };
               categoryMap.set(cat, { amount: current.amount + Math.abs(rawAmount), count: current.count + 1 });
@@ -81,14 +79,13 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
           }
         });
 
-        // Top Categorías
         const topCategories = Array.from(categoryMap.entries())
           .map(([name, data]) => ({ name, amount: data.amount, count: data.count }))
           .sort((a, b) => b.amount - a.amount)
           .slice(0, 3)
           .map(c => ({ ...c, amount: `${c.amount.toFixed(2)} €` }));
 
-        // 3. Valuations (Inversiones)
+        // 3. Valuations & Positions (Inversiones)
         const valuationsRows = valueRanges.find((r: any) => r.range.includes('Valuations'))?.values || [];
         const latestValuationByPlatform = new Map<string, number>();
         const latestAtByPlatform = new Map<string, number>();
@@ -104,9 +101,27 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
           }
         });
 
+        const principalByPlatform = new Map<string, number>();
+        platformSheets.forEach(platform => {
+          const safePlatformName = platform.replace(/\s+/g, ''); // Handle Revolut X
+          const platformRange = valueRanges.find((r: any) => r.range.includes(platform) || r.range.includes(safePlatformName))?.values || [];
+          platformRange.forEach((row: any[]) => {
+            const principal = row[5];
+            if (typeof principal === 'number') {
+              principalByPlatform.set(platform, (principalByPlatform.get(platform) ?? 0) + principal);
+            }
+          });
+        });
+
+        const knownPlatforms = new Set([...principalByPlatform.keys(), ...latestValuationByPlatform.keys()]);
         let totalInvestments = 0;
-        latestValuationByPlatform.forEach(value => {
-          totalInvestments += value;
+        knownPlatforms.forEach(platform => {
+          const valuation = latestValuationByPlatform.get(platform);
+          if (valuation !== undefined) {
+            totalInvestments += valuation;
+          } else {
+            totalInvestments += principalByPlatform.get(platform) ?? 0;
+          }
         });
 
         const formatter = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });
