@@ -227,9 +227,9 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
       </div>
 
       {/* Main Chart */}
-      <div className="card">
-        <h3>Histórico de Patrimonio 📈</h3>
-        <svg viewBox="0 0 600 240" preserveAspectRatio="none" style={{ width: '100%', height: 'auto', marginTop: '16px' }}>
+      <div className="card" style={{ overflowX: 'auto' }}>
+        <h3 style={{ position: 'sticky', left: 0 }}>Histórico de Patrimonio 📈</h3>
+        <svg viewBox="0 0 600 240" style={{ width: '100%', minWidth: '500px', height: 'auto', marginTop: '16px', display: 'block' }}>
           <g stroke="var(--border)" strokeWidth="1">
             <line x1="0" y1="50" x2="600" y2="50" />
             <line x1="0" y1="100" x2="600" y2="100" />
