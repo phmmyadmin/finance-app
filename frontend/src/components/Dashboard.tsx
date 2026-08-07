@@ -56,14 +56,35 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
         // 1. Patrimony from General
         let totalPatrimony = 0;
         const generalRows = valueRanges.find((r: any) => r.range.includes('General'))?.values || [];
+        console.log("General rows:", generalRows);
+        
+        let foundVal = undefined;
         for (let i = 0; i < generalRows.length; i++) {
           const row = generalRows[i];
           const idx = row.findIndex((c: any) => String(c).toLowerCase().includes('total patrimony'));
-          if (idx !== -1 && idx + 1 < row.length) {
-            const val = row[idx + 1];
-            totalPatrimony = typeof val === 'number' ? val : parseFloat(String(val).replace(/[^0-9.-]+/g, ''));
+          if (idx !== -1) {
+            console.log(`Found Total Patrimony at row ${i}, col ${idx}`);
+            // Check right
+            if (idx + 1 < row.length && row[idx + 1] !== '' && row[idx + 1] != null) {
+               foundVal = row[idx + 1];
+               console.log("Value found at right (idx+1):", foundVal);
+            } 
+            // Check right+1
+            else if (idx + 2 < row.length && row[idx + 2] !== '' && row[idx + 2] != null) {
+               foundVal = row[idx + 2];
+               console.log("Value found at right (idx+2):", foundVal);
+            } 
+            // Check below
+            else if (i + 1 < generalRows.length && generalRows[i + 1][idx] !== '' && generalRows[i + 1][idx] != null) {
+               foundVal = generalRows[i + 1][idx];
+               console.log("Value found below:", foundVal);
+            }
             break;
           }
+        }
+
+        if (foundVal !== undefined) {
+          totalPatrimony = typeof foundVal === 'number' ? foundVal : parseFloat(String(foundVal).replace(/[^0-9.-]+/g, ''));
         }
 
         // Patrimony History
