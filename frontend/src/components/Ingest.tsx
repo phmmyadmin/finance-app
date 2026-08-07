@@ -63,7 +63,15 @@ const Ingest: React.FC = () => {
       const values: any[] = [];
       let bankName = 'Unknown';
 
-      parsedData.forEach((row: any) => {
+      // 1. Fetch current row count to know where to insert formulas
+      const colAResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Cash!A2:A?valueRenderOption=UNFORMATTED_VALUE`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!colAResponse.ok) throw new Error("Could not fetch Cash!A2:A to calculate row index");
+      const colAData = await colAResponse.json();
+      const startRow = 2 + (colAData.values?.length || 0);
+
+      parsedData.forEach((row: any, i: number) => {
         let dateStr = '';
         let description = '';
         let amount = 0;
@@ -87,12 +95,13 @@ const Ingest: React.FC = () => {
 
         if (dateStr && !isNaN(amount)) {
           const category = categorize({ description, amount });
+          const r = startRow + values.length; // Current row number in Excel
           values.push([
             dateStr,
             description,
             amount,
-            '', 
-            '', 
+            `=TODAY()-A${r}`,
+            `=SUM(C$2:C${r})`,
             bankName,
             category
           ]);
@@ -101,9 +110,10 @@ const Ingest: React.FC = () => {
 
       if (values.length === 0) throw new Error("No valid rows to ingest");
 
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Cash!A:G:append?valueInputOption=USER_ENTERED`;
+      const endRow = startRow + values.length - 1;
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Cash!A${startRow}:G${endRow}?valueInputOption=USER_ENTERED`;
       const response = await fetch(url, {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -113,7 +123,7 @@ const Ingest: React.FC = () => {
 
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.error?.message || "Failed to append");
+        throw new Error(err.error?.message || "Failed to update rows");
       }
 
       setIngestSuccess(true);
