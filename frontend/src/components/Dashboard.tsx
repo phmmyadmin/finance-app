@@ -1,6 +1,78 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+  token: string | null;
+}
+
+interface DashboardData {
+  patrimony: string;
+  investments: string;
+  monthSpending: string;
+  topCategories: { name: string; amount: string; count: number }[];
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ token }) => {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!token) return;
+      try {
+        const spreadsheetId = import.meta.env.VITE_SPREADSHEET_ID;
+        if (!spreadsheetId) {
+          throw new Error("Missing VITE_SPREADSHEET_ID in .env");
+        }
+
+        // We assume a sheet named "Dashboard" exists with basic key-value data for now.
+        // In a real scenario, you'd fetch specific ranges or use a generic range.
+        const response = await fetch(
+          `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Dashboard!A1:B10`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Error al acceder a Google Sheets. Verifica los permisos o el ID.");
+        }
+
+        const result = await response.json();
+        const rows = result.values || [];
+        
+        // Very basic mapping for demonstration. You would parse your actual sheet structure here.
+        const getValue = (key: string) => {
+          const row = rows.find((r: any[]) => r[0] === key);
+          return row ? row[1] : "0 €";
+        };
+
+        setData({
+          patrimony: getValue("Patrimonio"),
+          investments: getValue("Inversiones"),
+          monthSpending: getValue("Gasto Mes"),
+          topCategories: [
+            { name: "Restaurantes", amount: getValue("Cat_Restaurantes"), count: 14 },
+            { name: "Compra", amount: getValue("Cat_Compra"), count: 4 },
+          ]
+        });
+      } catch (err: any) {
+        console.error(err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [token]);
+
+  if (loading) return <div>Cargando datos desde Sheets...</div>;
+  if (error) return <div style={{color: 'var(--danger)'}}>{error}</div>;
+  if (!data) return null;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
@@ -8,18 +80,18 @@ const Dashboard: React.FC = () => {
       <div className="kpi-scroll-container">
         <div className="kpi-card">
           <div className="kpi-label">PATRIMONIO</div>
-          <div className="kpi-value">145.230 €</div>
-          <div className="kpi-trend pos">↑ 2.4% este mes</div>
+          <div className="kpi-value">{data.patrimony}</div>
+          <div className="kpi-trend pos">Actualizado hoy</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">INVERSIONES</div>
-          <div className="kpi-value">12.050 €</div>
-          <div className="kpi-trend pos">↑ 1.1% este mes</div>
+          <div className="kpi-value">{data.investments}</div>
+          <div className="kpi-trend pos">Actualizado hoy</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">GASTO MES</div>
-          <div className="kpi-value">1.120 €</div>
-          <div className="kpi-trend neg">↓ 300€ vs mes pasado</div>
+          <div className="kpi-value">{data.monthSpending}</div>
+          <div className="kpi-trend neg">Actualizado hoy</div>
         </div>
       </div>
 
@@ -32,7 +104,7 @@ const Dashboard: React.FC = () => {
             <line x1="0" y1="100" x2="600" y2="100" />
             <line x1="0" y1="150" x2="600" y2="150" />
           </g>
-          {/* Dummy bars */}
+          {/* Dummy bars for now until we have real series data */}
           <rect x="50" y="100" width="30" height="100" fill="var(--accent-soft)" rx="4" />
           <rect x="120" y="80" width="30" height="120" fill="var(--accent-soft)" rx="4" />
           <rect x="190" y="120" width="30" height="80" fill="var(--accent-soft)" rx="4" />
@@ -46,27 +118,15 @@ const Dashboard: React.FC = () => {
       {/* Top Expenses List */}
       <div className="card">
         <h3>Top Categorías 🍔</h3>
-        <div className="list-item">
-          <div>
-            <div style={{ fontWeight: 600 }}>Restaurantes</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>14 transacciones</div>
+        {data.topCategories.map((cat, i) => (
+          <div key={i} className="list-item">
+            <div>
+              <div style={{ fontWeight: 600 }}>{cat.name}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{cat.count} transacciones</div>
+            </div>
+            <div style={{ fontWeight: 600, color: 'var(--text)' }}>{cat.amount}</div>
           </div>
-          <div style={{ fontWeight: 600, color: 'var(--text)' }}>320 €</div>
-        </div>
-        <div className="list-item">
-          <div>
-            <div style={{ fontWeight: 600 }}>Compra</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>4 transacciones</div>
-          </div>
-          <div style={{ fontWeight: 600, color: 'var(--text)' }}>215 €</div>
-        </div>
-        <div className="list-item">
-          <div>
-            <div style={{ fontWeight: 600 }}>Transporte</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>6 transacciones</div>
-          </div>
-          <div style={{ fontWeight: 600, color: 'var(--text)' }}>85 €</div>
-        </div>
+        ))}
       </div>
       
     </div>

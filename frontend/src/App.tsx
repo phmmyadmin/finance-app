@@ -58,7 +58,7 @@ function App() {
         </header>
 
         {activeTab === 'dashboard' && (
-          <Dashboard />
+          <Dashboard token={token} />
         )}
 
         {activeTab === 'ingest' && (

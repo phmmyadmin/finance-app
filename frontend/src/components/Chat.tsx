@@ -33,7 +33,7 @@ const Chat: React.FC = () => {
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
       if (!apiKey) {
-        throw new Error("Missing Gemini API Key");
+        throw new Error("Missing VITE_GEMINI_API_KEY in .env");
       }
 
       const genAI = new GoogleGenerativeAI(apiKey);
@@ -42,12 +42,28 @@ const Chat: React.FC = () => {
       const prompt = `Eres un asistente financiero amable y experto. El usuario pregunta: "${userMessage}". Responde de manera concisa y clara.`;
       
       const result = await model.generateContent(prompt);
+      
+      // Safety block check
+      if (result.response.promptFeedback?.blockReason) {
+        throw new Error(`Mensaje bloqueado por seguridad: ${result.response.promptFeedback.blockReason}`);
+      }
+
       const responseText = result.response.text();
       
       setMessages(prev => [...prev, { role: 'ai', text: responseText }]);
-    } catch (error) {
-      console.error(error);
-      setMessages(prev => [...prev, { role: 'ai', text: 'Ups, parece que no pude procesar eso. (Asegúrate de que VITE_GEMINI_API_KEY esté configurada)' }]);
+    } catch (error: any) {
+      console.error("Gemini API Error:", error);
+      
+      let errorMessage = 'Ups, ocurrió un error desconocido.';
+      if (error.message.includes('API key')) {
+        errorMessage = 'Clave API incorrecta o no configurada. Revisa VITE_GEMINI_API_KEY en tu .env';
+      } else if (error.status === 403) {
+        errorMessage = 'Error 403: Permisos denegados. Si restringiste la API key por HTTP referrers, permite localhost.';
+      } else {
+        errorMessage = `Error al consultar Gemini: ${error.message}`;
+      }
+
+      setMessages(prev => [...prev, { role: 'ai', text: errorMessage }]);
     } finally {
       setIsLoading(false);
     }
