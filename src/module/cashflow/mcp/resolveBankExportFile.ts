@@ -4,6 +4,7 @@ const EXTENSION_BY_BANK: Record<string, string> = {
   bbva: '.xlsx',
   sabadell: '.xls',
   revolut: '.csv',
+  trade_republic: '.csv',
 };
 
 const DEFAULT_SUBDIR = 'Downloads';
