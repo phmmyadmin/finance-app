@@ -27,10 +27,12 @@ jobs:
           cache: 'pnpm'
 
       - name: Install Dependencies
+        working-directory: ./frontend
         run: pnpm install
 
       - name: Build Frontend
-        run: pnpm --filter frontend run build
+        working-directory: ./frontend
+        run: pnpm run build
         env:
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
