@@ -70,7 +70,7 @@ const Ingest: React.FC = () => {
         />
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>📁</div>
         <h3>Sube tu extracto</h3>
-        <p style={{ color: 'var(--text-muted)' }}>Arrastra aquí un archivo CSV de tu banco (BBVA, Sabadell, Revolut) o haz clic para seleccionar.</p>
+        <p style={{ color: 'var(--text-muted)' }}>Arrastra aquí un archivo de tu banco (BBVA, Sabadell, Revolut, Trade Republic) o haz clic para seleccionar.</p>
       </div>
 
       {file && (
