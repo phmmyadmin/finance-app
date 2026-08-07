@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import Papa from 'papaparse';
+import { categorize } from '../utils/categorize';
 
 const Ingest: React.FC = () => {
   const [dragActive, setDragActive] = useState(false);
@@ -22,7 +23,7 @@ const Ingest: React.FC = () => {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        setParsedData(results.data.slice(0, 5)); // Just preview the first 5
+        setParsedData(results.data); // Store all parsed rows, don't slice!
       }
     });
   };
@@ -52,7 +53,6 @@ const Ingest: React.FC = () => {
     setIsIngesting(true);
 
     try {
-      // 1. Detect bank and map to Cash format
       const token = localStorage.getItem('google_token');
       const spreadsheetId = import.meta.env.VITE_SPREADSHEET_ID;
       if (!token || !spreadsheetId) throw new Error("Missing auth or spreadsheet ID");
@@ -63,7 +63,6 @@ const Ingest: React.FC = () => {
       const values: any[] = [];
       let bankName = 'Unknown';
 
-      // Very simple mapping for the frontend ingest
       parsedData.forEach((row: any) => {
         let dateStr = '';
         let description = '';
@@ -80,7 +79,6 @@ const Ingest: React.FC = () => {
           description = String(row['Description'] || '').trim();
           amount = parseFloat(row['Amount']);
         } else {
-          // Fallback generic
           bankName = 'OTHER';
           dateStr = new Date().toISOString().slice(0, 10);
           description = JSON.stringify(row);
@@ -88,14 +86,15 @@ const Ingest: React.FC = () => {
         }
 
         if (dateStr && !isNaN(amount)) {
+          const category = categorize({ description, amount });
           values.push([
             dateStr,
             description,
             amount,
-            '', // Formula D will be filled by backend/sheets ideally, but we can't easily append formulas dynamically without knowing the row here. Actually, we can just leave empty if it's not strictly required, or write a dummy.
-            '', // Formula E
+            '', 
+            '', 
             bankName,
-            'uncategorized'
+            category
           ]);
         }
       });
