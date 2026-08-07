@@ -61,9 +61,9 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
         let foundVal = undefined;
         for (let i = 0; i < generalRows.length; i++) {
           const row = generalRows[i];
-          const idx = row.findIndex((c: any) => String(c).toLowerCase().includes('total patrimony'));
+          const idx = row.findIndex((c: any) => String(c).toLowerCase().includes('current patrimony'));
           if (idx !== -1) {
-            console.log(`Found Total Patrimony at row ${i}, col ${idx}`);
+            console.log(`Found Current Patrimony at row ${i}, col ${idx}`);
             // Check right
             if (idx + 1 < row.length && row[idx + 1] !== '' && row[idx + 1] != null) {
                foundVal = row[idx + 1];
