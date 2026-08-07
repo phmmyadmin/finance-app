@@ -106,7 +106,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
           const safePlatformName = platform.replace(/\s+/g, ''); // Handle Revolut X
           const platformRange = valueRanges.find((r: any) => r.range.includes(platform) || r.range.includes(safePlatformName))?.values || [];
           platformRange.forEach((row: any[]) => {
-            const principal = row[5];
+            const principal = row[3];
             if (typeof principal === 'number') {
               principalByPlatform.set(platform, (principalByPlatform.get(platform) ?? 0) + principal);
             }
