@@ -22,11 +22,11 @@ const InvestmentsViewer: React.FC<InvestmentsViewerProps> = ({ token }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [newValPlatform, setNewValPlatform] = useState('');
+  const platformSheets = ['MyInvestor', 'Urbanitae', 'Civislend', 'Revolut X', 'Esketit', 'Mintos'];
+
+  const [newValPlatform, setNewValPlatform] = useState(platformSheets[0]);
   const [newValAmount, setNewValAmount] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-
-  const platformSheets = ['MyInvestor', 'Urbanitae', 'Civislend', 'Revolut X', 'Esketit', 'Mintos'];
 
   const fetchData = async () => {
     if (!token) return;
@@ -108,7 +108,6 @@ const InvestmentsViewer: React.FC<InvestmentsViewerProps> = ({ token }) => {
 
       if (!response.ok) throw new Error("Error adding valuation");
       
-      setNewValPlatform('');
       setNewValAmount('');
       setLoading(true);
       await fetchData();
@@ -127,14 +126,16 @@ const InvestmentsViewer: React.FC<InvestmentsViewerProps> = ({ token }) => {
       <div className="card">
         <h3>Añadir Valoración 📈</h3>
         <form onSubmit={handleAddValuation} style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
-          <input 
-            type="text" 
-            placeholder="Plataforma (ej. MyInvestor)" 
-            value={newValPlatform} 
+          <select
+            value={newValPlatform}
             onChange={e => setNewValPlatform(e.target.value)}
             style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
-            required 
-          />
+            required
+          >
+            {platformSheets.map(p => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
           <input 
             type="number" 
             step="0.01" 
