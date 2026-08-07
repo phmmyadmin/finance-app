@@ -21,23 +21,51 @@ const Ingest: React.FC = () => {
   const processFile = async (file: File) => {
     setFile(file);
     const ext = file.name.split('.').pop()?.toLowerCase();
-    
+    let rawData: any[][] = [];
+
     if (ext === 'xls' || ext === 'xlsx') {
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: 'array' });
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: "" });
-      setParsedData(jsonData);
+      rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: "" }) as any[][];
+      parseRawData(rawData);
     } else {
       Papa.parse(file, {
-        header: true,
+        header: false,
         skipEmptyLines: true,
         complete: (results) => {
-          setParsedData(results.data);
+          parseRawData(results.data as any[][]);
         }
       });
     }
+  };
+
+  const parseRawData = (rawData: any[][]) => {
+    if (!rawData || rawData.length === 0) return;
+    
+    // Find the actual header row (often preceded by metadata in bank exports)
+    let headerRowIndex = 0;
+    for (let i = 0; i < Math.min(20, rawData.length); i++) {
+      const rowStr = rawData[i].map(String).join(' ').toLowerCase();
+      const hasDate = rowStr.includes('fecha') || rowStr.includes('date') || rowStr.includes('completed');
+      const hasAmount = rowStr.includes('importe') || rowStr.includes('amount') || rowStr.includes('value');
+      if (hasDate && hasAmount) {
+        headerRowIndex = i;
+        break;
+      }
+    }
+
+    const headers = rawData[headerRowIndex].map(h => String(h).trim());
+    const jsonData = rawData.slice(headerRowIndex + 1).map(row => {
+      const obj: any = {};
+      headers.forEach((h, i) => {
+        obj[h] = row[i] !== undefined ? row[i] : "";
+      });
+      return obj;
+    });
+
+    setParsedData(jsonData);
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -129,6 +157,32 @@ const Ingest: React.FC = () => {
           dateStr = dateRaw.trim().split(' ')[0];
           description = getVal(row, ['description', 'descrip']);
           amount = parseFloat(getVal(row, ['amount', 'importe']));
+        } else if (selectedBank === 'SABADELL' || getVal(row, ['saldo']) !== '') {
+          // If explicitly selected or has 'saldo' (often Sabadell exports)
+          bankName = 'Sabadell';
+          const dateRaw = getVal(row, ['fecha']);
+          // Convert DD/MM/YYYY to YYYY-MM-DD
+          const parts = dateRaw.trim().split('/');
+          if (parts.length === 3) {
+             dateStr = `${parts[2].slice(0,4)}-${parts[1]}-${parts[0]}`;
+          } else {
+             dateStr = dateRaw.trim();
+          }
+          description = getVal(row, ['concepto']).trim();
+          amount = parseFloat(getVal(row, ['importe', 'amount']).replace(',', '.'));
+        } else if (selectedBank === 'BBVA' || getVal(row, ['observaciones']) !== '') {
+          bankName = 'BBVA';
+          const dateRaw = getVal(row, ['fecha']);
+          const parts = dateRaw.trim().split('/');
+          if (parts.length === 3) {
+             dateStr = `${parts[2].slice(0,4)}-${parts[1]}-${parts[0]}`;
+          } else {
+             dateStr = dateRaw.trim();
+          }
+          const concepto = getVal(row, ['concepto']);
+          const observaciones = getVal(row, ['observaciones']);
+          description = `${concepto} ${observaciones}`.trim();
+          amount = parseFloat(getVal(row, ['importe', 'amount']).replace(',', '.'));
         } else {
           bankName = 'OTHER';
           dateStr = new Date().toISOString().slice(0, 10);
