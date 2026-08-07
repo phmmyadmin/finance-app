@@ -44,20 +44,38 @@ const Ingest: React.FC = () => {
   const parseRawData = (rawData: any[][]) => {
     if (!rawData || rawData.length === 0) return;
     
-    // Find the actual header row (often preceded by metadata in bank exports)
-    let headerRowIndex = 0;
-    for (let i = 0; i < Math.min(20, rawData.length); i++) {
-      const rowStr = rawData[i].map(String).join(' ').toLowerCase();
-      const hasDate = rowStr.includes('fecha') || rowStr.includes('date') || rowStr.includes('completed');
-      const hasAmount = rowStr.includes('importe') || rowStr.includes('amount') || rowStr.includes('value');
-      if (hasDate && hasAmount) {
-        headerRowIndex = i;
+    // Find the first row that looks like real data (contains a date AND has at least 3 filled columns)
+    let firstDataRowIndex = 0;
+    const dateRegex = /^(?:\d{2}[/-]\d{2}[/-]\d{4}|\d{4}-\d{2}-\d{2})/;
+    
+    for (let i = 0; i < Math.min(30, rawData.length); i++) {
+      const row = rawData[i];
+      if (!row || !Array.isArray(row)) continue;
+      
+      const nonEmptyCols = row.filter((col: any) => String(col || '').trim() !== '').length;
+      const hasDate = row.some((col: any) => dateRegex.test(String(col || '').trim()));
+      
+      if (hasDate && nonEmptyCols >= 3) {
+        firstDataRowIndex = i;
         break;
       }
     }
 
-    const headers = rawData[headerRowIndex].map(h => String(h).trim());
-    const jsonData = rawData.slice(headerRowIndex + 1).map(row => {
+    let headerRowIndex = 0;
+    let headers: string[] = [];
+    
+    if (firstDataRowIndex > 0) {
+      headerRowIndex = firstDataRowIndex - 1;
+      headers = rawData[headerRowIndex].map(h => String(h).trim());
+    } else {
+      // Fallback if data starts at row 0 (or not found)
+      headers = Array.from({ length: rawData[0].length }, (_, i) => `Col${i}`);
+    }
+
+    // Ensure headers are unique and not empty
+    headers = headers.map((h, i) => h || `Col${i}`);
+
+    const jsonData = rawData.slice(firstDataRowIndex).map(row => {
       const obj: any = {};
       headers.forEach((h, i) => {
         obj[h] = row[i] !== undefined ? row[i] : "";
