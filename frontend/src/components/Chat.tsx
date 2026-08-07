@@ -37,7 +37,7 @@ const Chat: React.FC = () => {
       }
 
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
       
       const prompt = `Eres un asistente financiero amable y experto. El usuario pregunta: "${userMessage}". Responde de manera concisa y clara.`;
       
