@@ -45,6 +45,7 @@ const Ingest: React.FC = () => {
     }
   };
 
+  const [selectedBank, setSelectedBank] = useState<string>('AUTO');
   const [isIngesting, setIsIngesting] = useState(false);
   const [ingestSuccess, setIngestSuccess] = useState(false);
 
@@ -57,9 +58,14 @@ const Ingest: React.FC = () => {
       const spreadsheetId = import.meta.env.VITE_SPREADSHEET_ID;
       if (!token || !spreadsheetId) throw new Error("Missing auth or spreadsheet ID");
 
-      const isTradeRepublic = 'counterparty_name' in parsedData[0];
-      const isRevolut = 'Completed Date' in parsedData[0] || 'Type' in parsedData[0];
+      let isTradeRepublic = 'counterparty_name' in parsedData[0];
+      let isRevolut = 'Completed Date' in parsedData[0] || 'Type' in parsedData[0] || 'Tipo' in parsedData[0];
       
+      if (selectedBank !== 'AUTO') {
+        isTradeRepublic = selectedBank === 'TRADE_REPUBLIC';
+        isRevolut = selectedBank === 'REVOLUT';
+      }
+
       let values: any[] = [];
       let bankName = 'Unknown';
 
@@ -94,6 +100,12 @@ const Ingest: React.FC = () => {
         let description = '';
         let amount = 0;
         
+        // Helper to find keys despite broken encodings
+        const getVal = (rowObj: any, matchers: string[]) => {
+          const key = Object.keys(rowObj).find(k => matchers.some(m => k.toLowerCase().includes(m.toLowerCase())));
+          return key ? String(rowObj[key]) : '';
+        };
+
         if (isTradeRepublic) {
           bankName = 'TRADE_REPUBLIC';
           dateStr = String(row['date'] || '').trim();
@@ -101,9 +113,10 @@ const Ingest: React.FC = () => {
           amount = parseFloat(row['amount']);
         } else if (isRevolut) {
           bankName = 'REVOLUT';
-          dateStr = String(row['Completed Date'] || row['Started Date'] || '').trim().split(' ')[0];
-          description = String(row['Description'] || '').trim();
-          amount = parseFloat(row['Amount']);
+          const dateRaw = getVal(row, ['completed date', 'started date', 'fecha de inicio', 'fecha de fin']);
+          dateStr = dateRaw.trim().split(' ')[0];
+          description = getVal(row, ['description', 'descrip']);
+          amount = parseFloat(getVal(row, ['amount', 'importe']));
         } else {
           bankName = 'OTHER';
           dateStr = new Date().toISOString().slice(0, 10);
@@ -204,6 +217,21 @@ const Ingest: React.FC = () => {
 
       {file && parsedData.length > 0 && (
         <div className="card">
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Banco origen:</label>
+            <select 
+              value={selectedBank} 
+              onChange={e => setSelectedBank(e.target.value)}
+              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', marginTop: '8px' }}
+            >
+              <option value="AUTO">Detectar automáticamente</option>
+              <option value="REVOLUT">Revolut</option>
+              <option value="TRADE_REPUBLIC">Trade Republic</option>
+              <option value="BBVA">BBVA</option>
+              <option value="SABADELL">Banco Sabadell</option>
+            </select>
+          </div>
+          
           <h3>Vista Previa ({file.name})</h3>
           <div style={{ overflowX: 'auto', marginTop: '16px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'left' }}>
