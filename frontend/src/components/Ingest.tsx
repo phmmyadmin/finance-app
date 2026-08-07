@@ -146,22 +146,41 @@ const Ingest: React.FC = () => {
           return key ? String(rowObj[key]) : '';
         };
 
+        const parseAmount = (val: string | number) => {
+          if (typeof val === 'number') return val;
+          if (!val) return 0;
+          let s = String(val).trim();
+          const lastDot = s.lastIndexOf('.');
+          const lastComma = s.lastIndexOf(',');
+          if (lastComma > lastDot) {
+            // "1.234.567,89"
+            s = s.replace(/\./g, '').replace(',', '.');
+          } else if (lastDot > lastComma && lastComma !== -1) {
+            // "1,234,567.89"
+            s = s.replace(/,/g, '');
+          } else if (lastComma !== -1) {
+            // "1234,89"
+            s = s.replace(',', '.');
+          }
+          // Remove spaces/currency symbols
+          s = s.replace(/[^\d.-]/g, '');
+          return parseFloat(s);
+        };
+
         if (isTradeRepublic) {
           bankName = 'Trade Republic';
           dateStr = String(row['date'] || '').trim();
           description = String(row['description'] || row['name'] || '').trim();
-          amount = parseFloat(row['amount']);
+          amount = parseAmount(row['amount']);
         } else if (isRevolut) {
           bankName = 'Revolut';
           const dateRaw = getVal(row, ['completed date', 'started date', 'fecha de inicio', 'fecha de fin']);
           dateStr = dateRaw.trim().split(' ')[0];
           description = getVal(row, ['description', 'descrip']);
-          amount = parseFloat(getVal(row, ['amount', 'importe']));
+          amount = parseAmount(getVal(row, ['amount', 'importe']));
         } else if (selectedBank === 'SABADELL' || getVal(row, ['saldo']) !== '') {
-          // If explicitly selected or has 'saldo' (often Sabadell exports)
           bankName = 'Sabadell';
           const dateRaw = getVal(row, ['fecha']);
-          // Convert DD/MM/YYYY to YYYY-MM-DD
           const parts = dateRaw.trim().split('/');
           if (parts.length === 3) {
              dateStr = `${parts[2].slice(0,4)}-${parts[1]}-${parts[0]}`;
@@ -169,7 +188,7 @@ const Ingest: React.FC = () => {
              dateStr = dateRaw.trim();
           }
           description = getVal(row, ['concepto']).trim();
-          amount = parseFloat(getVal(row, ['importe', 'amount']).replace(',', '.'));
+          amount = parseAmount(getVal(row, ['importe', 'amount']));
         } else if (selectedBank === 'BBVA' || getVal(row, ['observaciones']) !== '') {
           bankName = 'BBVA';
           const dateRaw = getVal(row, ['fecha']);
@@ -182,7 +201,7 @@ const Ingest: React.FC = () => {
           const concepto = getVal(row, ['concepto']);
           const observaciones = getVal(row, ['observaciones']);
           description = `${concepto} ${observaciones}`.trim();
-          amount = parseFloat(getVal(row, ['importe', 'amount']).replace(',', '.'));
+          amount = parseAmount(getVal(row, ['importe', 'amount']));
         } else {
           bankName = 'OTHER';
           dateStr = new Date().toISOString().slice(0, 10);
