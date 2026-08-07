@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import Dashboard from './components/Dashboard';
+import Ingest from './components/Ingest';
 
 function App() {
   const [token, setToken] = useState<string | null>(null);
@@ -60,10 +61,7 @@ function App() {
         )}
 
         {activeTab === 'ingest' && (
-          <div className="card">
-            <h2>Subir Extractos</h2>
-            <p>Aquí irá la subida de CSV para BBVA, Sabadell y Revolut.</p>
-          </div>
+          <Ingest />
         )}
 
         {activeTab === 'chat' && (
