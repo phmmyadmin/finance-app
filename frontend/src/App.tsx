@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
+import Dashboard from './components/Dashboard';
 
 function App() {
   const [token, setToken] = useState<string | null>(null);
@@ -55,10 +56,7 @@ function App() {
         </header>
 
         {activeTab === 'dashboard' && (
-          <div className="card">
-            <h2>Dashboard placeholder</h2>
-            <p>Aquí irán los gráficos y el resumen de patrimonio.</p>
-          </div>
+          <Dashboard />
         )}
 
         {activeTab === 'ingest' && (
