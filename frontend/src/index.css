@@ -52,7 +52,7 @@ p { color: var(--text-muted); line-height: 1.5; font-family: var(--font-body); }
 
 /* Contenedores */
 .container {
-  max-width: 600px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 24px 20px;
 }

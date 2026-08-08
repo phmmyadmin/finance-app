@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { LineChart, ShoppingCart } from 'lucide-react';
 
 interface DashboardProps {
   token: string | null;
@@ -226,9 +227,14 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
         </div>
       </div>
 
-      {/* Main Chart */}
-      <div className="card" style={{ overflowX: 'auto' }}>
-        <h3 style={{ position: 'sticky', left: 0 }}>Histórico de Patrimonio 📈</h3>
+      {/* Desktop Grid Layout */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+        
+        {/* Main Chart */}
+        <div className="card" style={{ overflowX: 'auto', margin: 0 }}>
+          <h3 style={{ position: 'sticky', left: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <LineChart size={18} color="var(--accent)" /> Histórico de Patrimonio
+          </h3>
         <svg viewBox="0 0 600 240" style={{ width: '100%', minWidth: '500px', height: 'auto', marginTop: '16px', display: 'block' }}>
           <g stroke="var(--border)" strokeWidth="1">
             <line x1="0" y1="50" x2="600" y2="50" />
@@ -254,11 +260,13 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
             );
           })}
         </svg>
-      </div>
+        </div>
 
-      {/* Top Expenses List */}
-      <div className="card">
-        <h3>Top Categorías (Mes actual) 🍔</h3>
+        {/* Top Expenses List */}
+        <div className="card" style={{ margin: 0 }}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <ShoppingCart size={18} color="var(--accent)" /> Top Categorías (Mes)
+          </h3>
         {data.topCategories.length > 0 ? data.topCategories.map((cat, i) => (
           <div key={i} className="list-item">
             <div>
@@ -270,6 +278,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token }) => {
         )) : (
           <div style={{ color: 'var(--text-muted)', marginTop: '10px' }}>No hay gastos registrados este mes.</div>
         )}
+        </div>
       </div>
       
     </div>
