@@ -7,12 +7,24 @@ import CashViewer from './components/CashViewer';
 import InvestmentsViewer from './components/InvestmentsViewer';
 
 function App() {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('google_token'));
+  const [token, setToken] = useState<string | null>(() => {
+    const savedToken = localStorage.getItem('google_token');
+    const expiresAt = localStorage.getItem('google_token_expires_at');
+    if (savedToken && expiresAt && Date.now() < parseInt(expiresAt, 10)) {
+      return savedToken;
+    }
+    // Token expired or not found
+    localStorage.removeItem('google_token');
+    localStorage.removeItem('google_token_expires_at');
+    return null;
+  });
   const [activeTab, setActiveTab] = useState<'dashboard' | 'cash' | 'investments' | 'ingest' | 'chat'>('dashboard');
 
   const login = useGoogleLogin({
     onSuccess: (codeResponse) => {
+      const expiresIn = codeResponse.expires_in || 3599; // Default to 1 hour if not provided
       localStorage.setItem('google_token', codeResponse.access_token);
+      localStorage.setItem('google_token_expires_at', (Date.now() + expiresIn * 1000).toString());
       setToken(codeResponse.access_token);
     },
     onError: (error) => console.log('Login Failed:', error),
