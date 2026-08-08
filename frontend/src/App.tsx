@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
+import { LayoutDashboard, Wallet, TrendingUp, UploadCloud, MessageSquare, LogOut, Landmark } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Ingest from './components/Ingest';
 import Chat from './components/Chat';
@@ -36,7 +37,7 @@ function App() {
     return (
       <div className="container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', paddingBottom: 0 }}>
         <div className="card" style={{ textAlign: 'center', width: '100%' }}>
-          <div className="emoji-icon" style={{ fontSize: '48px' }}>💸</div>
+          <Landmark size={48} color="var(--accent)" style={{ marginBottom: '16px' }} />
           <h1>Finance App</h1>
           <p style={{ marginBottom: '24px' }}>Inicia sesión para gestionar tu patrimonio y extractos directamente desde tu navegador.</p>
           <button 
@@ -61,65 +62,62 @@ function App() {
   }
 
   return (
-    <>
-      <div className="container" style={{ paddingBottom: '100px' }}>
-        <header style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ margin: 0 }}>
-            {activeTab === 'dashboard' && 'Resumen 📊'}
-            {activeTab === 'cash' && 'Gastos 💸'}
-            {activeTab === 'investments' && 'Inversiones 📈'}
-            {activeTab === 'ingest' && 'Ingesta 📥'}
-            {activeTab === 'chat' && 'Asistente 💬'}
-          </h1>
-          <button 
-            onClick={() => {
-              localStorage.removeItem('google_token');
-              setToken(null);
-            }}
-            style={{
-              background: 'transparent',
-              color: 'var(--text)',
-              border: '1px solid var(--text)',
-              padding: '6px 12px',
-              borderRadius: '16px',
-              fontSize: '12px',
-              cursor: 'pointer'
-            }}
-          >
-            Salir 🚪
-          </button>
-        </header>
+    <div className="container" style={{ paddingBottom: '20px' }}>
+      <header style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ margin: 0 }}>
+          {activeTab === 'dashboard' && 'Resumen'}
+          {activeTab === 'cash' && 'Gastos'}
+          {activeTab === 'investments' && 'Inversiones'}
+          {activeTab === 'ingest' && 'Ingesta'}
+          {activeTab === 'chat' && 'Asistente'}
+        </h1>
+        <button 
+          onClick={() => {
+            localStorage.removeItem('google_token');
+            setToken(null);
+          }}
+          style={{
+            background: 'var(--bg-subtle)',
+            color: 'var(--text)',
+            border: '1px solid var(--border)',
+            padding: '8px 12px',
+            borderRadius: '12px',
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+        >
+          <LogOut size={14} /> Salir
+        </button>
+      </header>
 
-        {activeTab === 'dashboard' && <Dashboard token={token} />}
-        {activeTab === 'cash' && <CashViewer token={token} />}
-        {activeTab === 'investments' && <InvestmentsViewer token={token} />}
-        {activeTab === 'ingest' && <Ingest />}
-        {activeTab === 'chat' && <Chat />}
+      <div className="tab-group">
+        <button className={`tab-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
+          <LayoutDashboard size={16} /> <span>Inicio</span>
+        </button>
+        <button className={`tab-item ${activeTab === 'cash' ? 'active' : ''}`} onClick={() => setActiveTab('cash')}>
+          <Wallet size={16} /> <span>Cash</span>
+        </button>
+        <button className={`tab-item ${activeTab === 'investments' ? 'active' : ''}`} onClick={() => setActiveTab('investments')}>
+          <TrendingUp size={16} /> <span>Inv</span>
+        </button>
+        <button className={`tab-item ${activeTab === 'ingest' ? 'active' : ''}`} onClick={() => setActiveTab('ingest')}>
+          <UploadCloud size={16} /> <span>Sube</span>
+        </button>
+        <button className={`tab-item ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>
+          <MessageSquare size={16} /> <span>IA</span>
+        </button>
       </div>
 
-      <nav className="bottom-bar">
-        <button className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-          <span className="tab-icon">📊</span>
-          <span style={{fontSize: '10px'}}>Inicio</span>
-        </button>
-        <button className={`tab-btn ${activeTab === 'cash' ? 'active' : ''}`} onClick={() => setActiveTab('cash')}>
-          <span className="tab-icon">💸</span>
-          <span style={{fontSize: '10px'}}>Cash</span>
-        </button>
-        <button className={`tab-btn ${activeTab === 'investments' ? 'active' : ''}`} onClick={() => setActiveTab('investments')}>
-          <span className="tab-icon">📈</span>
-          <span style={{fontSize: '10px'}}>Inv</span>
-        </button>
-        <button className={`tab-btn ${activeTab === 'ingest' ? 'active' : ''}`} onClick={() => setActiveTab('ingest')}>
-          <span className="tab-icon">📥</span>
-          <span style={{fontSize: '10px'}}>Sube</span>
-        </button>
-        <button className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>
-          <span className="tab-icon">💬</span>
-          <span style={{fontSize: '10px'}}>IA</span>
-        </button>
-      </nav>
-    </>
+      {activeTab === 'dashboard' && <Dashboard token={token} />}
+      {activeTab === 'cash' && <CashViewer token={token} />}
+      {activeTab === 'investments' && <InvestmentsViewer token={token} />}
+      {activeTab === 'ingest' && <Ingest />}
+      {activeTab === 'chat' && <Chat />}
+    </div>
   );
 }
 
