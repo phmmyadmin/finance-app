@@ -22,7 +22,7 @@
       "description": "Absolute path to the finance-app project (where .env, scripts/ and src/ live).",
       "type": "textfield",
       "required": true,
-      "default": "/Users/pablo/workspace/finance-app"
+      "default": "/Users/pablo/workspace/personal projects/finance-app"
     },
     {
       "name": "nodePath",
